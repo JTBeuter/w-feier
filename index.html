@@ -106,6 +106,9 @@
 
         let currentTeamName = null;
         let currentUser = null;
+        let roundFinished = false;
+        let currentQuestion = null;
+        let teamVote = null; // Track which answer this team voted for
 
         // Anonymous sign-in
         signInAnonymously(auth)
@@ -147,17 +150,71 @@
             startListeners();
         }
 
+        function updateVotingDisplay() {
+            const votingArea = document.getElementById('votingArea');
+            
+            // Check if round is finished first
+            if (!roundFinished || !currentQuestion) {
+                votingArea.innerHTML = '<p class="empty-state">Warte auf Freigabe der Antworten...</p>';
+                return;
+            }
+            
+            // Get all answers from database
+            get(ref(db, 'game/answers')).then(snapshot => {
+                const allAnswers = snapshot.val();
+                
+                // Check if team already voted
+                get(ref(db, `game/votes/${currentQuestion.id}/${currentTeamName}`)).then(voteSnapshot => {
+                    teamVote = voteSnapshot.val();
+                    
+                    if (allAnswers && allAnswers[currentQuestion.id]) {
+                        let votingHtml = '';
+                        const teamAnswers = allAnswers[currentQuestion.id];
+                        
+                        // Show all answers including the correct one (if it was added)
+                        Object.entries(teamAnswers).forEach(([team, answerData]) => {
+                            if (team !== currentTeamName) { // Don't vote on own answer
+                                const isVoted = teamVote === team;
+                                const buttonClass = isVoted ? 'btn-vote-selected' : '';
+                                const checkmark = isVoted ? '✓ ' : '';
+                                
+                                votingHtml += `
+                                    <div class="voting-button">
+                                        <button class="btn btn-vote ${buttonClass}" onclick="voteAnswer('${currentQuestion.id}', '${team}')" ${teamVote ? 'disabled' : ''}>
+                                            ${checkmark}${answerData.text}
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                        });
+                        votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
+                    } else {
+                        votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
+                    }
+                });
+            });
+        }
+
         function showGameScreen() {
-            document.getElementById('loginScreen').classList.remove('active');
-            document.getElementById('gameScreen').classList.add('active');
+            const loginScreen = document.getElementById('loginScreen');
+            const gameScreen = document.getElementById('gameScreen');
+            
+            loginScreen.classList.remove('active');
+            loginScreen.style.display = 'none';
+            gameScreen.classList.add('active');
+            gameScreen.style.display = 'block';
             document.getElementById('currentTeam').textContent = `Team: ${currentTeamName}`;
         }
 
         function startListeners() {
             // Listen for current question
             onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
-                const question = snapshot.val();
+                currentQuestion = snapshot.val();
+                const question = currentQuestion;
                 const questionArea = document.getElementById('questionArea');
+                
+                // Reset vote for new question
+                teamVote = null;
                 
                 if (question) {
                     questionArea.innerHTML = `<h3>${question.text}</h3>`;
@@ -178,33 +235,20 @@
                     document.getElementById('answerForm').style.display = 'none';
                     document.getElementById('answerSubmitted').style.display = 'none';
                 }
+                
+                // Update voting display when question changes
+                updateVotingDisplay();
             });
 
             // Listen for answers (voting)
             onValue(ref(db, 'game/answers'), (snapshot) => {
-                const allAnswers = snapshot.val();
-                const votingArea = document.getElementById('votingArea');
-                
-                if (allAnswers && Object.keys(allAnswers).length > 0) {
-                    let votingHtml = '';
-                    Object.entries(allAnswers).forEach(([questionId, teamAnswers]) => {
-                        Object.entries(teamAnswers).forEach(([team, answerData]) => {
-                            if (team !== currentTeamName) { // Don't vote on own answer
-                                const votes = answerData.votes || 0;
-                                votingHtml += `
-                                    <div class="voting-button">
-                                        <button class="btn btn-vote" onclick="voteAnswer('${questionId}', '${team}')">
-                                            ${answerData.text} (${votes} 🗳)
-                                        </button>
-                                    </div>
-                                `;
-                            }
-                        });
-                    });
-                    votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
-                } else {
-                    votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
-                }
+                updateVotingDisplay();
+            });
+            
+            // Listen for round finished state to trigger voting display update
+            onValue(ref(db, 'game/roundFinished'), (snapshot) => {
+                roundFinished = snapshot.val() || false;
+                updateVotingDisplay();
             });
 
             // Listen for scores
@@ -235,11 +279,23 @@
 
         window.voteAnswer = async function(questionId, teamName) {
             try {
+                // Check if team already voted
+                if (teamVote) {
+                    alert('Du hast bereits abgestimmt!');
+                    return;
+                }
+                
+                // Store the vote
+                await set(ref(db, `game/votes/${questionId}/${currentTeamName}`), teamName);
+                
+                // Increment vote count for the answer
                 const voteRef = ref(db, `game/answers/${questionId}/${teamName}/votes`);
                 await runTransaction(voteRef, (current) => {
                     return (current || 0) + 1;
                 });
-                alert('Abstimmung registriert!');
+                
+                teamVote = teamName;
+                updateVotingDisplay();
             } catch (error) {
                 console.error('Voting error:', error);
             }
@@ -276,8 +332,13 @@
 
         function leaveGame() {
             currentTeamName = null;
-            document.getElementById('loginScreen').classList.add('active');
-            document.getElementById('gameScreen').classList.remove('active');
+            const loginScreen = document.getElementById('loginScreen');
+            const gameScreen = document.getElementById('gameScreen');
+            
+            loginScreen.classList.add('active');
+            loginScreen.style.display = 'block';
+            gameScreen.classList.remove('active');
+            gameScreen.style.display = 'none';
             document.getElementById('teamName').value = '';
         }
     </script>

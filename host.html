@@ -42,7 +42,8 @@
 
                     <div class="button-group">
                         <button id="addQuestionBtn" class="btn btn-primary">Frage stellen</button>
-                        <button id="finishRoundBtn" class="btn btn-secondary">Runde beenden</button>
+                        <button id="revealAnswersBtn" class="btn btn-secondary" style="display: none;">Zur Abstimmung</button>
+                        <button id="finishRoundBtn" class="btn btn-secondary" style="display: none;">Runde beenden</button>
                     </div>
                 </div>
 
@@ -116,6 +117,7 @@
 
         // Event Listeners
         document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
+        document.getElementById('revealAnswersBtn').addEventListener('click', revealAnswers);
         document.getElementById('finishRoundBtn').addEventListener('click', finishRound);
         document.getElementById('resetGameBtn').addEventListener('click', resetGame);
         document.getElementById('backBtn').addEventListener('click', () => window.location.href = 'index.html');
@@ -144,6 +146,9 @@
                     votingOpen: true
                 };
 
+                // Reset roundFinished flag for new question
+                await remove(ref(db, 'game/roundFinished'));
+
                 // Set current question
                 await set(ref(db, 'game/currentQuestion'), questionData);
 
@@ -154,10 +159,42 @@
                 document.getElementById('questionInput').value = '';
                 document.getElementById('correctAnswerInput').value = '';
 
+                // Update button visibility
+                document.getElementById('addQuestionBtn').style.display = 'none';
+                document.getElementById('revealAnswersBtn').style.display = 'block';
+                document.getElementById('finishRoundBtn').style.display = 'none';
+
                 alert('Frage wurde gestellt!');
             } catch (error) {
                 console.error('Error adding question:', error);
                 alert('Fehler beim Hinzufügen der Frage');
+            }
+        }
+
+        async function revealAnswers() {
+            if (!currentQuestion) {
+                alert('Keine aktive Frage');
+                return;
+            }
+
+            try {
+                // Add the correct answer to the answers list so it can be voted on
+                await set(ref(db, `game/answers/${currentQuestion.id}/__CORRECT__`), {
+                    text: currentQuestion.correct,
+                    votes: 0,
+                    submittedAt: new Date().toISOString()
+                });
+
+                // Mark round as finished to show answers to players
+                await set(ref(db, 'game/roundFinished'), true);
+
+                // Update button visibility
+                document.getElementById('revealAnswersBtn').style.display = 'none';
+                document.getElementById('finishRoundBtn').style.display = 'inline-block';
+                console.log('Answers revealed, finish round button shown');
+            } catch (error) {
+                console.error('Error revealing answers:', error);
+                alert('Fehler beim Freigeben der Antworten');
             }
         }
 
@@ -174,8 +211,14 @@
 
                 // Calculate points
                 const scores = {};
+                const correctVotes = answers['__CORRECT__']?.votes || 0;
 
                 Object.entries(answers).forEach(([teamName, answerData]) => {
+                    // Skip the __CORRECT__ entry
+                    if (teamName === '__CORRECT__') {
+                        return;
+                    }
+                    
                     // Initialize score
                     if (!scores[teamName]) {
                         scores[teamName] = 0;
@@ -186,7 +229,7 @@
                         scores[teamName] += 2; // +2 for correct answer
                     }
 
-                    // Add votes
+                    // Add votes from other teams
                     scores[teamName] += (answerData.votes || 0); // +1 per vote
                 });
 
@@ -203,11 +246,17 @@
                 // Clear answers for next round
                 await remove(ref(db, `game/answers/${currentQuestion.id}`));
 
-                // Clear current question
+                // Clear current question and round finished flag
                 await remove(ref(db, 'game/currentQuestion'));
+                await remove(ref(db, 'game/roundFinished'));
 
                 currentQuestion = null;
                 alert('Runde beendet! Punkte wurden vergeben.');
+
+                // Reset button visibility
+                document.getElementById('addQuestionBtn').style.display = 'block';
+                document.getElementById('revealAnswersBtn').style.display = 'none';
+                document.getElementById('finishRoundBtn').style.display = 'none';
             } catch (error) {
                 console.error('Error finishing round:', error);
                 alert('Fehler beim Beenden der Runde');

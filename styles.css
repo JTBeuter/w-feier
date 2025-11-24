@@ -178,6 +178,24 @@ textarea:focus {
     transform: translateX(5px);
 }
 
+.btn-vote-selected {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: white;
+    font-weight: bold;
+}
+
+.btn-vote:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-vote:disabled:hover {
+    background: var(--card-bg);
+    color: var(--text-color);
+    transform: none;
+}
+
 /* Game Screen */
 #gameScreen {
     padding: 20px;
