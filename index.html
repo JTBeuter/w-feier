@@ -86,7 +86,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getDatabase, ref, set, update, onValue, child, get, transaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue, child, get, runTransaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -108,7 +108,12 @@
         let currentUser = null;
 
         // Anonymous sign-in
-        signInAnonymously(auth).catch(error => console.error("Auth error:", error));
+        signInAnonymously(auth)
+            .then(user => {
+                currentUser = user;
+                console.log("Authenticated as:", user.user.uid);
+            })
+            .catch(error => console.error("Auth error:", error));
 
         // Event Listeners
         document.getElementById('joinBtn').addEventListener('click', joinGame);
@@ -231,7 +236,7 @@
         window.voteAnswer = async function(questionId, teamName) {
             try {
                 const voteRef = ref(db, `game/answers/${questionId}/${teamName}/votes`);
-                await transaction(voteRef, (current) => {
+                await runTransaction(voteRef, (current) => {
                     return (current || 0) + 1;
                 });
                 alert('Abstimmung registriert!');

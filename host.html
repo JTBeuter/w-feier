@@ -108,7 +108,11 @@
         let questionCounter = 0;
 
         // Anonymous sign-in
-        signInAnonymously(auth).catch(error => console.error("Auth error:", error));
+        signInAnonymously(auth)
+            .then(user => {
+                console.log("Host authenticated as:", user.user.uid);
+            })
+            .catch(error => console.error("Auth error:", error));
 
         // Event Listeners
         document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
