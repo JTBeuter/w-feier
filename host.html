@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nobody's Perfect - Host</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Host Screen -->
+        <div id="hostScreen" class="screen active">
+            <!-- Header -->
+            <header class="host-header">
+                <div>
+                    <h1>🎮 Host Panel</h1>
+                    <p style="color: #94a3b8; margin-top: 5px;">Verwalte die Fragen und Punkte</p>
+                </div>
+                <button id="backBtn" class="btn btn-secondary" style="width: auto;">Zurück zum Spiel</button>
+            </header>
+
+            <!-- Management Panel -->
+            <div class="management-panel">
+                <!-- Question Management -->
+                <div class="question-form">
+                    <h3>Neue Frage hinzufügen</h3>
+                    
+                    <div class="form-section">
+                        <label for="questionInput">Frage:</label>
+                        <textarea id="questionInput" placeholder="Gib die Frage ein..." maxlength="200"></textarea>
+                    </div>
+
+                    <div class="form-section">
+                        <label for="correctAnswerInput">Richtige Antwort:</label>
+                        <input 
+                            type="text" 
+                            id="correctAnswerInput" 
+                            placeholder="Die korrekte Antwort..."
+                            maxlength="100"
+                        >
+                    </div>
+
+                    <div class="button-group">
+                        <button id="addQuestionBtn" class="btn btn-primary">Frage stellen</button>
+                        <button id="finishRoundBtn" class="btn btn-secondary">Runde beenden</button>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="answer-management">
+                    <h3>Statistik</h3>
+                    <div class="form-section">
+                        <p><strong>Aktive Teams:</strong> <span id="teamCount">0</span></p>
+                        <p><strong>Eingegangene Antworten:</strong> <span id="answerCount">0</span></p>
+                        <p><strong>Stimmen abgegeben:</strong> <span id="voteCount">0</span></p>
+                    </div>
+                    <button id="resetGameBtn" class="btn btn-secondary">Spiel zurücksetzen</button>
+                </div>
+            </div>
+
+            <!-- Current Question -->
+            <div class="answers-display">
+                <h3>Aktuelle Frage</h3>
+                <div id="currentQuestionDisplay" class="question-box">
+                    <p class="empty-state">Keine Frage gestellt</p>
+                </div>
+            </div>
+
+            <!-- Answers Section -->
+            <div class="answers-display">
+                <h3>Eingegangene Antworten</h3>
+                <div id="answersList" class="empty-state">
+                    Warte auf Antworten von den Teams...
+                </div>
+            </div>
+
+            <!-- Final Scoreboard -->
+            <div class="answers-display">
+                <h3>Punkte</h3>
+                <div id="finalScoreboard">
+                    <p class="empty-state">Noch keine Punkte vergeben</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getDatabase, ref, set, update, onValue, child, get, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC85YAPrSD3a4uw-bzTOWWAx18KBG4Enes",
+            authDomain: "w-feier.firebaseapp.com",
+            databaseURL: "https://w-feier-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "w-feier",
+            storageBucket: "w-feier.firebasestorage.app",
+            messagingSenderId: "319969590062",
+            appId: "1:319969590062:web:7601a072a2429df53758bf",
+            measurementId: "G-C7KVSD61MF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let currentQuestion = null;
+        let questionCounter = 0;
+
+        // Anonymous sign-in
+        signInAnonymously(auth).catch(error => console.error("Auth error:", error));
+
+        // Event Listeners
+        document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
+        document.getElementById('finishRoundBtn').addEventListener('click', finishRound);
+        document.getElementById('resetGameBtn').addEventListener('click', resetGame);
+        document.getElementById('backBtn').addEventListener('click', () => window.location.href = 'index.html');
+
+        // Start listening for data
+        startListeners();
+
+        async function addQuestion() {
+            const questionText = document.getElementById('questionInput').value.trim();
+            const correctAnswer = document.getElementById('correctAnswerInput').value.trim();
+
+            if (!questionText || !correctAnswer) {
+                alert('Bitte fülle alle Felder aus');
+                return;
+            }
+
+            try {
+                questionCounter++;
+                const questionId = `q${questionCounter}`;
+
+                const questionData = {
+                    id: questionId,
+                    text: questionText,
+                    correct: correctAnswer,
+                    createdAt: new Date().toISOString(),
+                    votingOpen: true
+                };
+
+                // Set current question
+                await set(ref(db, 'game/currentQuestion'), questionData);
+
+                // Store in history
+                await set(ref(db, `game/questions/${questionId}`), questionData);
+
+                // Clear inputs
+                document.getElementById('questionInput').value = '';
+                document.getElementById('correctAnswerInput').value = '';
+
+                alert('Frage wurde gestellt!');
+            } catch (error) {
+                console.error('Error adding question:', error);
+                alert('Fehler beim Hinzufügen der Frage');
+            }
+        }
+
+        async function finishRound() {
+            if (!currentQuestion) {
+                alert('Keine aktive Frage');
+                return;
+            }
+
+            try {
+                // Get all answers for this question
+                const answersSnapshot = await get(ref(db, `game/answers/${currentQuestion.id}`));
+                const answers = answersSnapshot.val() || {};
+
+                // Calculate points
+                const scores = {};
+
+                Object.entries(answers).forEach(([teamName, answerData]) => {
+                    // Initialize score
+                    if (!scores[teamName]) {
+                        scores[teamName] = 0;
+                    }
+
+                    // Check if answer is correct
+                    if (answerData.text.toLowerCase() === currentQuestion.correct.toLowerCase()) {
+                        scores[teamName] += 2; // +2 for correct answer
+                    }
+
+                    // Add votes
+                    scores[teamName] += (answerData.votes || 0); // +1 per vote
+                });
+
+                // Update scores in database
+                const scoresRef = ref(db, 'game/scores');
+                const currentScores = (await get(scoresRef)).val() || {};
+
+                Object.entries(scores).forEach(([team, points]) => {
+                    currentScores[team] = (currentScores[team] || 0) + points;
+                });
+
+                await set(scoresRef, currentScores);
+
+                // Clear answers for next round
+                await remove(ref(db, `game/answers/${currentQuestion.id}`));
+
+                // Clear current question
+                await remove(ref(db, 'game/currentQuestion'));
+
+                currentQuestion = null;
+                alert('Runde beendet! Punkte wurden vergeben.');
+            } catch (error) {
+                console.error('Error finishing round:', error);
+                alert('Fehler beim Beenden der Runde');
+            }
+        }
+
+        async function resetGame() {
+            if (confirm('Willst du das ganze Spiel wirklich zurücksetzen? Das kann nicht rückgängig gemacht werden.')) {
+                try {
+                    await remove(ref(db, 'game'));
+                    alert('Spiel wurde zurückgesetzt');
+                    location.reload();
+                } catch (error) {
+                    console.error('Error resetting game:', error);
+                }
+            }
+        }
+
+        function startListeners() {
+            // Listen for current question
+            onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
+                currentQuestion = snapshot.val();
+                updateCurrentQuestionDisplay();
+            });
+
+            // Listen for answers
+            onValue(ref(db, 'game/answers'), (snapshot) => {
+                const allAnswers = snapshot.val();
+                updateAnswersDisplay(allAnswers);
+                updateStats(allAnswers);
+            });
+
+            // Listen for scores
+            onValue(ref(db, 'game/scores'), (snapshot) => {
+                const scores = snapshot.val();
+                updateScoreboard(scores);
+            });
+
+            // Listen for teams
+            onValue(ref(db, 'game/teams'), (snapshot) => {
+                const teams = snapshot.val();
+                document.getElementById('teamCount').textContent = teams ? Object.keys(teams).length : 0;
+            });
+        }
+
+        function updateCurrentQuestionDisplay() {
+            const display = document.getElementById('currentQuestionDisplay');
+            
+            if (currentQuestion) {
+                display.innerHTML = `
+                    <div style="text-align: left;">
+                        <h3 style="text-align: center; margin-bottom: 15px;">${currentQuestion.text}</h3>
+                        <p><strong>Richtige Antwort:</strong> ${currentQuestion.correct}</p>
+                    </div>
+                `;
+            } else {
+                display.innerHTML = '<p class="empty-state">Keine Frage gestellt</p>';
+            }
+        }
+
+        function updateAnswersDisplay(allAnswers) {
+            const answersList = document.getElementById('answersList');
+
+            if (!allAnswers || !currentQuestion || !allAnswers[currentQuestion.id]) {
+                answersList.innerHTML = '<p class="empty-state">Warte auf Antworten von den Teams...</p>';
+                return;
+            }
+
+            const answers = allAnswers[currentQuestion.id];
+            let html = '';
+
+            Object.entries(answers).forEach(([team, answerData]) => {
+                const isCorrect = answerData.text.toLowerCase() === currentQuestion.correct.toLowerCase();
+                html += `
+                    <div class="answer-item ${isCorrect ? 'correct' : ''}">
+                        <div class="answer-info">
+                            <div class="answer-team">${team}</div>
+                            <div class="answer-text">${answerData.text}</div>
+                        </div>
+                        <div class="answer-votes">${answerData.votes || 0} 🗳</div>
+                    </div>
+                `;
+            });
+
+            answersList.innerHTML = html;
+        }
+
+        function updateScoreboard(scores) {
+            const scoreboard = document.getElementById('finalScoreboard');
+
+            if (!scores || Object.keys(scores).length === 0) {
+                scoreboard.innerHTML = '<p class="empty-state">Noch keine Punkte vergeben</p>';
+                return;
+            }
+
+            const sorted = Object.entries(scores)
+                .sort((a, b) => b[1] - a[1])
+                .map((entry, index) => `
+                    <div class="answer-item">
+                        <div class="answer-info">
+                            <div class="answer-team">#${index + 1} ${entry[0]}</div>
+                        </div>
+                        <div class="answer-votes">${entry[1]} Punkte</div>
+                    </div>
+                `)
+                .join('');
+
+            scoreboard.innerHTML = sorted;
+        }
+
+        function updateStats(allAnswers) {
+            let totalAnswers = 0;
+            let totalVotes = 0;
+
+            if (allAnswers) {
+                Object.values(allAnswers).forEach(question => {
+                    Object.values(question).forEach(answer => {
+                        totalAnswers++;
+                        totalVotes += answer.votes || 0;
+                    });
+                });
+            }
+
+            document.getElementById('answerCount').textContent = totalAnswers;
+            document.getElementById('voteCount').textContent = totalVotes;
+        }
+    </script>
+</body>
+</html>

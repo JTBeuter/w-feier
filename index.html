@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nobody's Perfect - Spieler</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="screen active">
+            <div class="login-box">
+                <h1>🎮 Nobody's Perfect</h1>
+                <p class="subtitle">Spiel mit deinem Team mit!</p>
+                
+                <div class="input-group">
+                    <label for="teamName">Teamnamen:</label>
+                    <input 
+                        type="text" 
+                        id="teamName" 
+                        placeholder="z.B. Die Gewinner"
+                        maxlength="20"
+                    >
+                </div>
+                
+                <button id="joinBtn" class="btn btn-primary">Spiel beitreten</button>
+                <button id="hostBtn" class="btn btn-secondary">Zum Host-Panel</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <!-- Header with Score -->
+            <header class="game-header">
+                <div class="team-info">
+                    <h2 id="currentTeam"></h2>
+                    <div class="score-display">
+                        <span id="teamScore">0</span> Punkte
+                    </div>
+                </div>
+                <button id="leaveBtn" class="btn btn-small">Verlassen</button>
+            </header>
+
+            <!-- Question Display -->
+            <div class="question-section">
+                <div id="questionArea" class="question-box">
+                    <h3>Wartet auf Frage...</h3>
+                </div>
+            </div>
+
+            <!-- Answer Input Section -->
+            <div class="answer-section">
+                <div id="answerForm" style="display: none;">
+                    <h4>Deine Antwort:</h4>
+                    <input 
+                        type="text" 
+                        id="answerInput" 
+                        placeholder="Gib deine Antwort ein..."
+                        maxlength="100"
+                    >
+                    <button id="submitAnswerBtn" class="btn btn-primary">Antwort einreichen</button>
+                </div>
+                <div id="answerSubmitted" style="display: none;" class="info-box">
+                    ✓ Deine Antwort wurde eingereicht
+                </div>
+            </div>
+
+            <!-- Voting Section -->
+            <div class="voting-section">
+                <h4>Abstimmen:</h4>
+                <div id="votingArea" class="voting-buttons">
+                    <p class="empty-state">Warte auf Antworten zum Abstimmen...</p>
+                </div>
+            </div>
+
+            <!-- Scoreboard -->
+            <div class="scoreboard-section">
+                <h4>Punktestand:</h4>
+                <div id="scoreBoard" class="scoreboard">
+                    <p class="empty-state">Keine Teams bisher...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getDatabase, ref, set, update, onValue, child, get, transaction } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC85YAPrSD3a4uw-bzTOWWAx18KBG4Enes",
+            authDomain: "w-feier.firebaseapp.com",
+            databaseURL: "https://w-feier-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "w-feier",
+            storageBucket: "w-feier.firebasestorage.app",
+            messagingSenderId: "319969590062",
+            appId: "1:319969590062:web:7601a072a2429df53758bf",
+            measurementId: "G-C7KVSD61MF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        let currentTeamName = null;
+        let currentUser = null;
+
+        // Anonymous sign-in
+        signInAnonymously(auth).catch(error => console.error("Auth error:", error));
+
+        // Event Listeners
+        document.getElementById('joinBtn').addEventListener('click', joinGame);
+        document.getElementById('hostBtn').addEventListener('click', () => window.location.href = 'host.html');
+        document.getElementById('leaveBtn').addEventListener('click', leaveGame);
+        document.getElementById('submitAnswerBtn').addEventListener('click', submitAnswer);
+
+        async function joinGame() {
+            const teamName = document.getElementById('teamName').value.trim();
+            if (!teamName) {
+                alert('Bitte gib einen Teamnamen ein');
+                return;
+            }
+
+            currentTeamName = teamName;
+
+            // Create team in database
+            await set(ref(db, `game/teams/${teamName}`), {
+                name: teamName,
+                joinedAt: new Date().toISOString()
+            });
+
+            // Initialize score if not exists
+            const scoreRef = ref(db, `game/scores/${teamName}`);
+            const snapshot = await get(scoreRef);
+            if (!snapshot.exists()) {
+                await set(scoreRef, 0);
+            }
+
+            showGameScreen();
+            startListeners();
+        }
+
+        function showGameScreen() {
+            document.getElementById('loginScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('currentTeam').textContent = `Team: ${currentTeamName}`;
+        }
+
+        function startListeners() {
+            // Listen for current question
+            onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
+                const question = snapshot.val();
+                const questionArea = document.getElementById('questionArea');
+                
+                if (question) {
+                    questionArea.innerHTML = `<h3>${question.text}</h3>`;
+                    
+                    // Check if team already answered
+                    const answerRef = ref(db, `game/answers/${question.id}/${currentTeamName}`);
+                    get(answerRef).then(snap => {
+                        if (snap.exists()) {
+                            document.getElementById('answerForm').style.display = 'none';
+                            document.getElementById('answerSubmitted').style.display = 'block';
+                        } else {
+                            document.getElementById('answerForm').style.display = 'block';
+                            document.getElementById('answerSubmitted').style.display = 'none';
+                        }
+                    });
+                } else {
+                    questionArea.innerHTML = '<h3>Wartet auf Frage...</h3>';
+                    document.getElementById('answerForm').style.display = 'none';
+                    document.getElementById('answerSubmitted').style.display = 'none';
+                }
+            });
+
+            // Listen for answers (voting)
+            onValue(ref(db, 'game/answers'), (snapshot) => {
+                const allAnswers = snapshot.val();
+                const votingArea = document.getElementById('votingArea');
+                
+                if (allAnswers && Object.keys(allAnswers).length > 0) {
+                    let votingHtml = '';
+                    Object.entries(allAnswers).forEach(([questionId, teamAnswers]) => {
+                        Object.entries(teamAnswers).forEach(([team, answerData]) => {
+                            if (team !== currentTeamName) { // Don't vote on own answer
+                                const votes = answerData.votes || 0;
+                                votingHtml += `
+                                    <div class="voting-button">
+                                        <button class="btn btn-vote" onclick="voteAnswer('${questionId}', '${team}')">
+                                            ${answerData.text} (${votes} 🗳)
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                        });
+                    });
+                    votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
+                } else {
+                    votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
+                }
+            });
+
+            // Listen for scores
+            onValue(ref(db, 'game/scores'), (snapshot) => {
+                const scores = snapshot.val();
+                const scoreBoard = document.getElementById('scoreBoard');
+                
+                if (scores) {
+                    const sortedTeams = Object.entries(scores)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([team, score]) => `
+                            <div class="scoreboard-entry ${team === currentTeamName ? 'own-team' : ''}">
+                                <span class="team-name">${team}</span>
+                                <span class="team-score">${score}</span>
+                            </div>
+                        `).join('');
+                    scoreBoard.innerHTML = sortedTeams;
+                } else {
+                    scoreBoard.innerHTML = '<p class="empty-state">Keine Teams bisher...</p>';
+                }
+
+                // Update own score
+                if (scores && scores[currentTeamName]) {
+                    document.getElementById('teamScore').textContent = scores[currentTeamName];
+                }
+            });
+        }
+
+        window.voteAnswer = async function(questionId, teamName) {
+            try {
+                const voteRef = ref(db, `game/answers/${questionId}/${teamName}/votes`);
+                await transaction(voteRef, (current) => {
+                    return (current || 0) + 1;
+                });
+                alert('Abstimmung registriert!');
+            } catch (error) {
+                console.error('Voting error:', error);
+            }
+        };
+
+        async function submitAnswer() {
+            const answerText = document.getElementById('answerInput').value.trim();
+            if (!answerText) {
+                alert('Bitte gib eine Antwort ein');
+                return;
+            }
+
+            try {
+                const questionRef = ref(db, 'game/currentQuestion');
+                const snapshot = await get(questionRef);
+                const question = snapshot.val();
+
+                if (question) {
+                    await set(ref(db, `game/answers/${question.id}/${currentTeamName}`), {
+                        text: answerText,
+                        votes: 0,
+                        submittedAt: new Date().toISOString()
+                    });
+
+                    document.getElementById('answerInput').value = '';
+                    document.getElementById('answerForm').style.display = 'none';
+                    document.getElementById('answerSubmitted').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Submit error:', error);
+                alert('Fehler beim Einreichen der Antwort');
+            }
+        }
+
+        function leaveGame() {
+            currentTeamName = null;
+            document.getElementById('loginScreen').classList.add('active');
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('teamName').value = '';
+        }
+    </script>
+</body>
+</html>
