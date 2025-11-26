@@ -154,6 +154,17 @@ textarea:focus {
     color: white;
 }
 
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+    border: 2px solid var(--danger-color);
+}
+
+.btn-danger:hover {
+    background: #d12323;
+    border-color: #d12323;
+}
+
 .btn-small {
     width: auto;
     padding: 8px 16px;
@@ -288,6 +299,34 @@ h4 {
 
 .voting-button {
     width: 100%;
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.question-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    gap: 10px;
+}
+
+.question-content {
+    flex: 1;
+}
+
+.question-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .scoreboard {

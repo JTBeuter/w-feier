@@ -109,6 +109,7 @@
         let roundFinished = false;
         let currentQuestion = null;
         let teamVote = null; // Track which answer this team voted for
+        let gamePhase = 'setup'; // Syncs with host: 'setup', 'answering', 'voting', 'finished'
 
         // Anonymous sign-in
         signInAnonymously(auth)
@@ -275,6 +276,37 @@
                     document.getElementById('teamScore').textContent = scores[currentTeamName];
                 }
             });
+
+            // Listen for game phase
+            onValue(ref(db, 'game/phase'), (snapshot) => {
+                gamePhase = snapshot.val() || 'setup';
+                updateUIForPhase();
+            });
+        }
+
+        function updateUIForPhase() {
+            const answerForm = document.getElementById('answerForm');
+            const answerSubmitted = document.getElementById('answerSubmitted');
+            const votingSection = document.querySelector('.voting-section');
+            const submitBtn = document.getElementById('submitAnswerBtn');
+            
+            if (gamePhase === 'answering') {
+                // Show answer section, hide voting
+                votingSection.style.display = 'none';
+                answerForm.style.display = 'block';
+                if (submitBtn) submitBtn.disabled = false;
+            } else if (gamePhase === 'voting') {
+                // Show voting section, hide answer input
+                votingSection.style.display = 'block';
+                answerForm.style.display = 'none';
+                answerSubmitted.style.display = 'none';
+                if (submitBtn) submitBtn.disabled = true;  // Disable answer submission
+            } else {
+                // Setup or finished phase
+                votingSection.style.display = 'none';
+                answerForm.style.display = 'none';
+                if (submitBtn) submitBtn.disabled = true;
+            }
         }
 
         window.voteAnswer = async function(questionId, teamName) {
