@@ -82,6 +82,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboardScreen" class="screen">
+            <header class="game-header">
+                <h1>🏆 Rangliste</h1>
+                <button id="leaveLeaderboardBtn" class="btn btn-small">Verlassen</button>
+            </header>
+            <div class="leaderboard-section">
+                <div id="leaderboardDisplay" class="scoreboard">
+                    <p class="empty-state">Lade Rangliste...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -124,6 +137,7 @@
         document.getElementById('hostBtn').addEventListener('click', () => window.location.href = 'host.html');
         document.getElementById('leaveBtn').addEventListener('click', leaveGame);
         document.getElementById('submitAnswerBtn').addEventListener('click', submitAnswer);
+        document.getElementById('leaveLeaderboardBtn').addEventListener('click', leaveGame);
 
         async function joinGame() {
             const teamName = document.getElementById('teamName').value.trim();
@@ -230,6 +244,16 @@
         }
 
         function startListeners() {
+            // Listen for game phase
+            onValue(ref(db, 'game/phase'), (snapshot) => {
+                const newPhase = snapshot.val();
+                if (newPhase !== gamePhase) {
+                    gamePhase = newPhase;
+                    console.log('🔄 Game phase changed to:', gamePhase);
+                    updateUIForPhase();
+                }
+            });
+
             // Listen for current question
             onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
                 currentQuestion = snapshot.val();
@@ -307,28 +331,70 @@
         }
 
         function updateUIForPhase() {
+            const gameScreen = document.getElementById('gameScreen');
+            const leaderboardScreen = document.getElementById('leaderboardScreen');
             const answerForm = document.getElementById('answerForm');
             const answerSubmitted = document.getElementById('answerSubmitted');
             const votingSection = document.querySelector('.voting-section');
             const submitBtn = document.getElementById('submitAnswerBtn');
             
             if (gamePhase === 'answering') {
-                // Show answer section, hide voting
+                // Show game screen with answer section, hide voting and leaderboard
+                gameScreen.style.display = 'block';
+                leaderboardScreen.style.display = 'none';
                 votingSection.style.display = 'none';
                 answerForm.style.display = 'block';
+                answerSubmitted.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = false;
             } else if (gamePhase === 'voting') {
-                // Show voting section, hide answer input
+                // Show game screen with voting section, hide answer input
+                gameScreen.style.display = 'block';
+                leaderboardScreen.style.display = 'none';
                 votingSection.style.display = 'block';
                 answerForm.style.display = 'none';
                 answerSubmitted.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = true;  // Disable answer submission
+            } else if (gamePhase === 'results') {
+                // Show leaderboard screen
+                gameScreen.style.display = 'none';
+                leaderboardScreen.style.display = 'block';
+                updateLeaderboardDisplay();
             } else {
                 // Setup or finished phase
+                gameScreen.style.display = 'block';
+                leaderboardScreen.style.display = 'none';
                 votingSection.style.display = 'none';
                 answerForm.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = true;
             }
+        }
+
+        function updateLeaderboardDisplay() {
+            get(ref(db, 'game/scores')).then(snapshot => {
+                const scores = snapshot.val() || {};
+                const leaderboardDisplay = document.getElementById('leaderboardDisplay');
+                
+                if (Object.keys(scores).length === 0) {
+                    leaderboardDisplay.innerHTML = '<p class="empty-state">Keine Teams bisher...</p>';
+                    return;
+                }
+                
+                const sortedTeams = Object.entries(scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([team, score], index) => {
+                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                        const isOwnTeam = team === currentTeamName ? 'own-team' : '';
+                        return `
+                            <div class="scoreboard-entry ${isOwnTeam}">
+                                <span class="medal">${medal}</span>
+                                <span class="team-name">${team}</span>
+                                <span class="team-score">${score} Punkte</span>
+                            </div>
+                        `;
+                    }).join('');
+                
+                leaderboardDisplay.innerHTML = sortedTeams;
+            });
         }
 
         window.voteAnswer = async function(questionId, teamName) {

@@ -465,25 +465,42 @@
         }
 
         async function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < questions.length) {
-                if (gamePhase === 'answering') {
-                    await presentQuestion();
-                } else if (gamePhase === 'voting') {
+            // If coming from results phase, go back to voting phase
+            if (gamePhase === 'results') {
+                gamePhase = 'voting';
+                await set(ref(db, 'game/phase'), gamePhase);
+                currentQuestionIndex++;
+                
+                if (currentQuestionIndex < questions.length) {
                     await presentQuestionForVoting();
-                }
-            } else {
-                if (gamePhase === 'answering') {
-                    // Show button to manually start voting
-                    document.getElementById('startVotingBtn').style.display = 'inline-block';
-                    document.getElementById('showResultsBtn').style.display = 'none';
-                    document.getElementById('nextQuestionBtn').style.display = 'none';
                 } else {
                     // Voting finished
                     alert('Spiel beendet!');
                     gamePhase = 'finished';
                     await set(ref(db, 'game/phase'), gamePhase);
                     backToSetup();
+                }
+            } else {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < questions.length) {
+                    if (gamePhase === 'answering') {
+                        await presentQuestion();
+                    } else if (gamePhase === 'voting') {
+                        await presentQuestionForVoting();
+                    }
+                } else {
+                    if (gamePhase === 'answering') {
+                        // Show button to manually start voting
+                        document.getElementById('startVotingBtn').style.display = 'inline-block';
+                        document.getElementById('showResultsBtn').style.display = 'none';
+                        document.getElementById('nextQuestionBtn').style.display = 'none';
+                    } else {
+                        // Voting finished
+                        alert('Spiel beendet!');
+                        gamePhase = 'finished';
+                        await set(ref(db, 'game/phase'), gamePhase);
+                        backToSetup();
+                    }
                 }
             }
         }
@@ -571,6 +588,9 @@
                 console.log('✅ Scores saved successfully!');
                 console.log('Final scores in DB:', currentScores);
                 
+                // Set game phase to 'results' to show leaderboard on client
+                await set(ref(db, 'game/phase'), 'results');
+                
                 // Update button visibility
                 document.getElementById('showResultsBtn').style.display = 'none';
                 document.getElementById('nextQuestionBtn').style.display = 'inline-block';
@@ -616,6 +636,16 @@
         };
 
         function startListeners() {
+            // Listen for game phase changes
+            onValue(ref(db, 'game/phase'), (snapshot) => {
+                const newPhase = snapshot.val();
+                if (newPhase) {
+                    gamePhase = newPhase;
+                    console.log('🔄 Host phase updated to:', gamePhase);
+                    updateGameDisplay();
+                }
+            });
+
             // Listen for current question
             onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
                 currentQuestion = snapshot.val();
