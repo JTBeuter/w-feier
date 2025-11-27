@@ -160,40 +160,62 @@
                 return;
             }
             
-            // Get all answers from database
-            get(ref(db, 'game/answers')).then(snapshot => {
-                const allAnswers = snapshot.val();
-                
-                // Check if team already voted
-                get(ref(db, `game/votes/${currentQuestion.id}/${currentTeamName}`)).then(voteSnapshot => {
-                    teamVote = voteSnapshot.val();
-                    
-                    if (allAnswers && allAnswers[currentQuestion.id]) {
-                        let votingHtml = '';
-                        const teamAnswers = allAnswers[currentQuestion.id];
-                        
-                        // Show all answers including the correct one (if it was added)
-                        Object.entries(teamAnswers).forEach(([team, answerData]) => {
-                            if (team !== currentTeamName) { // Don't vote on own answer
-                                const isVoted = teamVote === team;
-                                const buttonClass = isVoted ? 'btn-vote-selected' : '';
-                                const checkmark = isVoted ? '✓ ' : '';
-                                
-                                votingHtml += `
-                                    <div class="voting-button">
-                                        <button class="btn btn-vote ${buttonClass}" onclick="voteAnswer('${currentQuestion.id}', '${team}')" ${teamVote ? 'disabled' : ''}>
-                                            ${checkmark}${answerData.text}
-                                        </button>
-                                    </div>
-                                `;
-                            }
+                    // Get the game seed first
+                    get(ref(db, 'game/seed')).then(seedSnapshot => {
+                        const gameSeed = seedSnapshot.val() || '';
+                        // Get all answers from database
+                        get(ref(db, 'game/answers')).then(snapshot => {
+                            const allAnswers = snapshot.val();
+                            // Check if team already voted
+                            get(ref(db, `game/votes/${currentQuestion.id}/${currentTeamName}`)).then(voteSnapshot => {
+                                teamVote = voteSnapshot.val();
+                                if (allAnswers && allAnswers[currentQuestion.id]) {
+                                    let votingHtml = '';
+                                    const teamAnswers = allAnswers[currentQuestion.id];
+                                    // Convert to array and filter out own answer
+                                    let answerArr = Object.entries(teamAnswers).filter(([team]) => team !== currentTeamName);
+                                    // Seeded shuffle: use game seed + team name + question id as seed
+                                    function seededRandom(seed) {
+                                        let x = Math.sin(seed) * 10000;
+                                        return x - Math.floor(x);
+                                    }
+                                    function stringToSeed(str) {
+                                        let hash = 0;
+                                        for (let i = 0; i < str.length; i++) {
+                                            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                                            hash |= 0;
+                                        }
+                                        return Math.abs(hash);
+                                    }
+                                    function seededShuffle(array, seed) {
+                                        let arr = array.slice();
+                                        for (let i = arr.length - 1; i > 0; i--) {
+                                            const j = Math.floor(seededRandom(seed + i) * (i + 1));
+                                            [arr[i], arr[j]] = [arr[j], arr[i]];
+                                        }
+                                        return arr;
+                                    }
+                                    const seed = stringToSeed(gameSeed + '_' + currentTeamName + '_' + currentQuestion.id);
+                                    answerArr = seededShuffle(answerArr, seed);
+                                    answerArr.forEach(([team, answerData]) => {
+                                        const isVoted = teamVote === team;
+                                        const buttonClass = isVoted ? 'btn-vote-selected' : '';
+                                        const checkmark = isVoted ? '✓ ' : '';
+                                        votingHtml += `
+                                            <div class="voting-button">
+                                                <button class="btn btn-vote ${buttonClass}" onclick="voteAnswer('${currentQuestion.id}', '${team}')" ${teamVote ? 'disabled' : ''}>
+                                                    ${checkmark}${answerData.text}
+                                                </button>
+                                            </div>
+                                        `;
+                                    });
+                                    votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
+                                } else {
+                                    votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
+                                }
+                            });
                         });
-                        votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
-                    } else {
-                        votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
-                    }
-                });
-            });
+                    });
         }
 
         function showGameScreen() {

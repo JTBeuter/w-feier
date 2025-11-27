@@ -322,7 +322,11 @@
             try {
                 // Clear previous game data
                 await remove(ref(db, 'game'));
-                
+
+                // Generate a random seed for this game
+                const gameSeed = Math.floor(Math.random() * 1e12).toString();
+                await set(ref(db, 'game/seed'), gameSeed);
+
                 // Upload all questions to database
                 for (const q of questions) {
                     await set(ref(db, `game/questions/${q.id}`), q);
@@ -331,16 +335,16 @@
                 gameStarted = true;
                 gamePhase = 'answering';
                 currentQuestionIndex = 0;
-                
+
                 // Set game phase in database
                 await set(ref(db, 'game/phase'), gamePhase);
-                
+
                 presentQuestion();
 
                 // Switch to game screen
                 document.getElementById('setupScreen').classList.remove('active');
                 document.getElementById('gameScreen').classList.add('active');
-                
+
                 updateGameDisplay();
             } catch (error) {
                 console.error('Error starting game:', error);
@@ -394,8 +398,8 @@
                     correct: currentQuestion.correct
                 });
 
-                // Add correct answer to voting list if not already there
-                const correctAnswerRef = ref(db, `game/answers/${currentQuestion.id}/__CORRECT__`);
+                // Add correct answer as a regular answer with team name 'Lösung' if not already there
+                const correctAnswerRef = ref(db, `game/answers/${currentQuestion.id}/Lösung`);
                 const correctSnapshot = await get(correctAnswerRef);
                 if (!correctSnapshot.exists()) {
                     await set(correctAnswerRef, {
@@ -517,10 +521,8 @@
                 // Second pass: Award points
                 Object.entries(votes).forEach(([votingTeam, votedFor]) => {
                     console.log(`\n👥 "${votingTeam}" voted for "${votedFor}"`);
-                    
                     if (!scores[votingTeam]) scores[votingTeam] = 0;
-                    
-                    if (votedFor === '__CORRECT__') {
+                    if (votedFor === 'Lösung') {
                         // This team voted for the correct answer: 3 points
                         scores[votingTeam] += 3;
                         console.log(`   ✅ Voted for CORRECT answer! +3 points`);
@@ -537,7 +539,7 @@
                 
                 // For each team's answer, give them 1 point per vote received
                 Object.entries(answers).forEach(([teamName, answerData]) => {
-                    if (teamName !== '__CORRECT__') {
+                    if (teamName !== 'Lösung') {
                         const votesReceived = voteCountByTeam[teamName] || 0;
                         if (votesReceived > 0) {
                             if (!scores[teamName]) scores[teamName] = 0;
@@ -671,10 +673,7 @@
             let html = '';
 
             Object.entries(answers).forEach(([team, answerData]) => {
-                // Skip the __CORRECT__ entry from display
-                if (team === '__CORRECT__') {
-                    return;
-                }
+                // No need to skip any team; show all answers
                 
                 const isCorrect = answerData.text.toLowerCase() === currentQuestion.correct.toLowerCase();
                 
