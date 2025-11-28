@@ -41,7 +41,7 @@
 
                     <div class="button-group">
                         <button id="addQuestionBtn" class="btn btn-primary">Frage hinzufügen</button>
-                        <button id="startGameBtn" class="btn btn-primary" style="margin-left: 10px;">Spiel starten</button>
+                        <button id="createLobbyBtn" class="btn btn-primary" style="margin-left: 10px;">Lobby erstellen</button>
                     </div>
                 </div>
 
@@ -156,7 +156,7 @@
         let currentQuestionIndex = 0;
         let gameStarted = false;
         let editingIndex = null;
-        let gamePhase = 'setup'; // 'setup', 'answering', 'voting', 'finished'
+        let gamePhase = 'setup'; // 'setup', 'waiting_for_teams', 'answering', 'voting', 'finished'
 
         // Load questions from localStorage on page load
         function loadQuestionsFromStorage() {
@@ -191,7 +191,7 @@
 
         // Event Listeners - Setup Mode
         document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
-        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('createLobbyBtn').addEventListener('click', createLobby);
         
         // Event Listeners - Game Mode
         document.getElementById('startVotingBtn').addEventListener('click', startVotingPhase);
@@ -331,7 +331,7 @@
             }
         };
 
-        async function startGame() {
+        async function createLobby() {
             if (questions.length === 0) {
                 alert('Bitte füge mindestens eine Frage hinzu');
                 return;
@@ -350,12 +350,17 @@
                     await set(ref(db, `game/questions/${q.id}`), q);
                 }
 
+                // Remove all teams (kick all teams out when creating lobby)
+                await remove(ref(db, 'game/teams'));
+                // Set kickAll flag to force all teams to login
+                await set(ref(db, 'game/kickAll'), true);
+
                 gameStarted = true;
-                gamePhase = 'setup';
+                gamePhase = 'waiting_for_teams';
                 currentQuestionIndex = 0;
 
-                // Set game phase in database to 'setup' so teams can join waiting lobby
-                await set(ref(db, 'game/phase'), 'setup');
+                // Set game phase in database to 'waiting_for_teams' so teams can join
+                await set(ref(db, 'game/phase'), 'waiting_for_teams');
 
                 // Switch to game screen
                 document.getElementById('setupScreen').classList.remove('active');
@@ -363,8 +368,8 @@
 
                 updateGameDisplay();
             } catch (error) {
-                console.error('Error starting game:', error);
-                alert('Fehler beim Starten des Spiels');
+                console.error('Error creating lobby:', error);
+                alert('Fehler beim Erstellen der Lobby');
             }
         }
 
@@ -450,9 +455,9 @@
 
         function updateGameDisplay() {
             let phaseName = 'Setup';
-            if (gamePhase === 'setup') {
+            if (gamePhase === 'waiting_for_teams') {
                 phaseName = '⏳ Warten auf Teams';
-                // Show start answering button during setup
+                // Show start answering button during waiting_for_teams
                 document.getElementById('startAnsweringBtn').style.display = 'inline-block';
                 document.getElementById('startVotingBtn').style.display = 'none';
                 document.getElementById('showResultsBtn').style.display = 'none';
@@ -491,7 +496,7 @@
             const answersTitle = document.getElementById('answersTitle');
             const teamsDisplaySection = document.getElementById('teamsDisplaySection');
             
-            if (gamePhase === 'setup') {
+            if (gamePhase === 'waiting_for_teams') {
                 statsAnswers.style.display = 'block';
                 statsVotes.style.display = 'none';
                 teamsDisplaySection.style.display = 'block';
@@ -529,8 +534,15 @@
         }
 
         async function startAnsweringPhase() {
+            // Only allow transition from waiting_for_teams
+            if (gamePhase !== 'waiting_for_teams') {
+                alert('Du kannst die Antwortrunde nur starten, wenn Teams beitreten dürfen.');
+                return;
+            }
             gamePhase = 'answering';
             currentQuestionIndex = 0;
+            // Clear kickAll flag so teams are not kicked anymore
+            await set(ref(db, 'game/kickAll'), false);
             await set(ref(db, 'game/phase'), gamePhase);
             await presentQuestion();
             updateGameDisplay();

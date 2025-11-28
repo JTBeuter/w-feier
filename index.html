@@ -13,7 +13,7 @@
             <div class="login-box">
                 <h1>🎮 Nobody's Perfect</h1>
                 <p class="subtitle">Spiel mit deinem Team mit!</p>
-                
+                <div id="setupBlockMessage" style="display:none; color:#ef4444; font-weight:bold; margin-bottom:15px;">Das Spiel wird gerade vorbereitet. Bitte warte, bis der Host das Spiel startet.</div>
                 <div class="input-group">
                     <label for="teamName">Teamnamen:</label>
                     <input 
@@ -23,7 +23,6 @@
                         maxlength="20"
                     >
                 </div>
-                
                 <button id="joinBtn" class="btn btn-primary">Spiel beitreten</button>
                 <button id="hostBtn" class="btn btn-secondary">Zum Host-Panel</button>
             </div>
@@ -241,29 +240,56 @@
         document.getElementById('leaveLeaderboardBtn').addEventListener('click', leaveGame);
 
         async function joinGame() {
+            // Only allow joining if phase is 'waiting_for_teams'
+            const phaseSnapshot = await get(ref(db, 'game/phase'));
+            const phase = phaseSnapshot.val();
+            if (phase !== 'waiting_for_teams') {
+                alert('Das Spiel ist noch nicht für Teams geöffnet oder läuft bereits. Bitte warte, bis der Host das Spiel für Teams freigibt.');
+                return;
+            }
             const teamName = document.getElementById('teamName').value.trim();
             if (!teamName) {
                 alert('Bitte gib einen Teamnamen ein');
                 return;
             }
-
             currentTeamName = teamName;
-
             // Create team in database
             await set(ref(db, `game/teams/${teamName}`), {
                 name: teamName,
                 joinedAt: new Date().toISOString()
             });
-
             // Initialize score if not exists
             const scoreRef = ref(db, `game/scores/${teamName}`);
             const snapshot = await get(scoreRef);
             if (!snapshot.exists()) {
                 await set(scoreRef, 0);
             }
-
             showGameScreen();
             startListeners();
+        }
+
+        function resetToLogin() {
+            const loginScreen = document.getElementById('loginScreen');
+            const gameScreen = document.getElementById('gameScreen');
+            const waitingLobbyScreen = document.getElementById('waitingLobbyScreen');
+            const leaderboardScreen = document.getElementById('leaderboardScreen');
+            const celebrationScreen = document.getElementById('celebrationScreen');
+            const transitionScreen = document.getElementById('transitionScreen');
+            
+            // Reset team name
+            currentTeamName = null;
+            gamePhase = 'setup';
+            
+            // Clear input
+            document.getElementById('teamName').value = '';
+            
+            // Show login screen, hide all others
+            loginScreen.classList.add('active');
+            gameScreen.style.display = 'none';
+            waitingLobbyScreen.style.display = 'none';
+            leaderboardScreen.style.display = 'none';
+            celebrationScreen.style.display = 'none';
+            transitionScreen.style.display = 'none';
         }
 
         function updateVotingDisplay() {
@@ -344,11 +370,27 @@
             document.getElementById('currentTeam').textContent = `Team: ${currentTeamName}`;
         }
 
+        let previousPhase = 'setup';
+
         function startListeners() {
             // Listen for game phase
             onValue(ref(db, 'game/phase'), (snapshot) => {
                 const newPhase = snapshot.val();
+                // Show/hide join button and message on login screen
+                const joinBtn = document.getElementById('joinBtn');
+                const setupBlockMessage = document.getElementById('setupBlockMessage');
+                if (newPhase !== 'waiting_for_teams') {
+                    joinBtn.disabled = true;
+                    setupBlockMessage.style.display = 'block';
+                    setupBlockMessage.textContent = (newPhase === 'setup')
+                        ? 'Das Spiel wird gerade vorbereitet. Bitte warte, bis der Host das Spiel startet.'
+                        : 'Das Spiel ist bereits gestartet oder läuft. Bitte warte auf die nächste Runde.';
+                } else {
+                    joinBtn.disabled = false;
+                    setupBlockMessage.style.display = 'none';
+                }
                 if (newPhase !== gamePhase) {
+                    previousPhase = gamePhase;
                     gamePhase = newPhase;
                     console.log('🔄 Game phase changed to:', gamePhase);
                     updateUIForPhase();
@@ -454,15 +496,42 @@
             const votingSection = document.querySelector('.voting-section');
             const submitBtn = document.getElementById('submitAnswerBtn');
             
-            if (gamePhase === 'setup') {
-                // Show waiting lobby screen
+            if (gamePhase === 'setup' || gamePhase === 'waiting_for_teams') {
+                // Show waiting lobby screen during setup or waiting_for_teams
                 gameScreen.style.display = 'none';
                 transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
                 celebrationScreen.style.display = 'none';
                 waitingLobbyScreen.style.display = 'block';
                 updateLobbyTeamsList();
-            } else if (gamePhase === 'answering') {
+            } else {
+                // If moving away from setup/waiting_for_teams phase, verify team is actually in the game
+                if (currentTeamName && gamePhase !== 'setup' && gamePhase !== 'waiting_for_teams') {
+                    get(ref(db, `game/teams/${currentTeamName}`)).then(snapshot => {
+                        if (!snapshot.exists()) {
+                            // Team is not in the game - send them back to login
+                            console.log('Team not found in game, redirecting to login');
+                            resetToLogin();
+                            return;
+                        }
+                        // Team exists, proceed with normal UI update
+                        updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen, 
+                                             waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn);
+                    }).catch(error => {
+                        console.error('Error checking team:', error);
+                        resetToLogin();
+                    });
+                } else {
+                    // No team or already checked, proceed with normal UI update
+                    updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen, 
+                                         waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn);
+                }
+            }
+        }
+        
+        function updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen,
+                                       waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn) {
+            if (gamePhase === 'answering') {
                 // Show game screen with answer section, hide voting and leaderboard
                 gameScreen.style.display = 'block';
                 transitionScreen.style.display = 'none';

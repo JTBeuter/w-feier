@@ -337,13 +337,30 @@ h4 {
 
 .scoreboard-entry {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 15px;
     background: var(--bg-color);
     border-radius: 8px;
     border-left: 3px solid var(--border-color);
     transition: all 0.3s ease;
+    gap: 15px;
+}
+
+.scoreboard-entry .medal {
+    min-width: 30px;
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+.scoreboard-entry .team-name {
+    flex: 1;
+    text-align: center;
+}
+
+.scoreboard-entry .team-score {
+    min-width: 100px;
+    text-align: right;
 }
 
 .scoreboard-entry:hover {
