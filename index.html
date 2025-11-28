@@ -29,6 +29,21 @@
             </div>
         </div>
 
+        <!-- Waiting Lobby Screen -->
+        <div id="waitingLobbyScreen" class="screen">
+            <div class="lobby-container">
+                <h1 style="font-size: 2.8em; margin-bottom: 5px;">⏳ Warten auf das Spiel</h1>
+                <p style="font-size: 1.1em; color: #94a3b8; margin-bottom: 50px;">Der Host bereitet das Spiel vor...</p>
+                
+                <div class="waiting-teams-display">
+                    <h3 style="font-size: 1.3em; margin-bottom: 20px;">Beigetretene Teams:</h3>
+                    <div id="lobbyTeamsList" class="teams-grid">
+                        <p class="empty-state">Teams werden geladen...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Game Screen -->
         <div id="gameScreen" class="screen">
             <!-- Header with Score -->
@@ -83,6 +98,17 @@
             </div>
         </div>
 
+        <!-- Transition Screen (Answer to Voting) -->
+        <div id="transitionScreen" class="screen">
+            <div class="transition-box">
+                <h1>⏸️ Antwortphase beendet</h1>
+                <p class="subtitle">Bereite dich auf die Abstimmung vor...</p>
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Leaderboard Screen -->
         <div id="leaderboardScreen" class="screen">
             <header class="game-header">
@@ -95,7 +121,82 @@
                 </div>
             </div>
         </div>
+
+        <!-- Celebration Screen (Game End) -->
+        <div id="celebrationScreen" class="screen">
+            <div class="celebration-container">
+                <h1 style="font-size: 3em; margin-bottom: 30px; animation: pulse 0.6s ease-in-out;">🎉 Spiel beendet! 🎉</h1>
+                <div class="podium">
+                    <!-- Silver (2nd place) -->
+                    <div class="podium-slot silver">
+                        <div class="medal">🥈</div>
+                        <h3 id="secondTeamName">Team</h3>
+                        <p id="secondTeamScore">0</p>
+                        <div class="place-label">2. Platz</div>
+                    </div>
+                    <!-- Gold (1st place) -->
+                    <div class="podium-slot gold">
+                        <div class="medal">🥇</div>
+                        <h3 id="firstTeamName">Team</h3>
+                        <p id="firstTeamScore">0</p>
+                        <div class="place-label">1. Platz</div>
+                    </div>
+                    <!-- Bronze (3rd place) -->
+                    <div class="podium-slot bronze">
+                        <div class="medal">🥉</div>
+                        <h3 id="thirdTeamName">Team</h3>
+                        <p id="thirdTeamScore">0</p>
+                        <div class="place-label">3. Platz</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <style>
+        .transition-box {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .transition-box h1 {
+            color: var(--text-color);
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .transition-box .subtitle {
+            color: var(--text-secondary);
+            font-size: 20px;
+            margin-bottom: 40px;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
@@ -266,17 +367,24 @@
                 if (question) {
                     questionArea.innerHTML = `<h3>${question.text}</h3>`;
                     
-                    // Check if team already answered
-                    const answerRef = ref(db, `game/answers/${question.id}/${currentTeamName}`);
-                    get(answerRef).then(snap => {
-                        if (snap.exists()) {
-                            document.getElementById('answerForm').style.display = 'none';
-                            document.getElementById('answerSubmitted').style.display = 'block';
-                        } else {
-                            document.getElementById('answerForm').style.display = 'block';
-                            document.getElementById('answerSubmitted').style.display = 'none';
-                        }
-                    });
+                    // Only show answer form during answering phase
+                    if (gamePhase === 'answering') {
+                        // Check if team already answered
+                        const answerRef = ref(db, `game/answers/${question.id}/${currentTeamName}`);
+                        get(answerRef).then(snap => {
+                            if (snap.exists()) {
+                                document.getElementById('answerForm').style.display = 'none';
+                                document.getElementById('answerSubmitted').style.display = 'block';
+                            } else {
+                                document.getElementById('answerForm').style.display = 'block';
+                                document.getElementById('answerSubmitted').style.display = 'none';
+                            }
+                        });
+                    } else {
+                        // During voting or other phases, never show the answer form
+                        document.getElementById('answerForm').style.display = 'none';
+                        document.getElementById('answerSubmitted').style.display = 'none';
+                    }
                 } else {
                     questionArea.innerHTML = '<h3>Wartet auf Frage...</h3>';
                     document.getElementById('answerForm').style.display = 'none';
@@ -328,28 +436,57 @@
                 gamePhase = snapshot.val() || 'setup';
                 updateUIForPhase();
             });
+
+            // Listen for teams joining (for lobby display)
+            onValue(ref(db, 'game/teams'), (snapshot) => {
+                updateLobbyTeamsList();
+            });
         }
 
         function updateUIForPhase() {
             const gameScreen = document.getElementById('gameScreen');
+            const transitionScreen = document.getElementById('transitionScreen');
             const leaderboardScreen = document.getElementById('leaderboardScreen');
+            const celebrationScreen = document.getElementById('celebrationScreen');
+            const waitingLobbyScreen = document.getElementById('waitingLobbyScreen');
             const answerForm = document.getElementById('answerForm');
             const answerSubmitted = document.getElementById('answerSubmitted');
             const votingSection = document.querySelector('.voting-section');
             const submitBtn = document.getElementById('submitAnswerBtn');
             
-            if (gamePhase === 'answering') {
+            if (gamePhase === 'setup') {
+                // Show waiting lobby screen
+                gameScreen.style.display = 'none';
+                transitionScreen.style.display = 'none';
+                leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'block';
+                updateLobbyTeamsList();
+            } else if (gamePhase === 'answering') {
                 // Show game screen with answer section, hide voting and leaderboard
                 gameScreen.style.display = 'block';
+                transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'none';
                 votingSection.style.display = 'none';
                 answerForm.style.display = 'block';
                 answerSubmitted.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = false;
+            } else if (gamePhase === 'answering_finished') {
+                // Show transition screen
+                gameScreen.style.display = 'none';
+                transitionScreen.style.display = 'block';
+                leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'none';
             } else if (gamePhase === 'voting') {
                 // Show game screen with voting section, hide answer input
                 gameScreen.style.display = 'block';
+                transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'none';
                 votingSection.style.display = 'block';
                 answerForm.style.display = 'none';
                 answerSubmitted.style.display = 'none';
@@ -357,16 +494,75 @@
             } else if (gamePhase === 'results') {
                 // Show leaderboard screen
                 gameScreen.style.display = 'none';
+                transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'block';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'none';
                 updateLeaderboardDisplay();
-            } else {
-                // Setup or finished phase
-                gameScreen.style.display = 'block';
+            } else if (gamePhase === 'celebration') {
+                // Show celebration screen
+                gameScreen.style.display = 'none';
+                transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'block';
+                waitingLobbyScreen.style.display = 'none';
+                updateCelebrationScreen();
+            } else {
+                // Finished phase
+                gameScreen.style.display = 'block';
+                transitionScreen.style.display = 'none';
+                leaderboardScreen.style.display = 'none';
+                celebrationScreen.style.display = 'none';
+                waitingLobbyScreen.style.display = 'none';
                 votingSection.style.display = 'none';
                 answerForm.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = true;
             }
+        }
+
+        function updateCelebrationScreen() {
+            get(ref(db, 'game/scores')).then(snapshot => {
+                const scores = snapshot.val() || {};
+                const sortedTeams = Object.entries(scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                
+                if (sortedTeams.length >= 1) {
+                    document.getElementById('firstTeamName').textContent = sortedTeams[0][0];
+                    document.getElementById('firstTeamScore').textContent = sortedTeams[0][1];
+                }
+                
+                if (sortedTeams.length >= 2) {
+                    document.getElementById('secondTeamName').textContent = sortedTeams[1][0];
+                    document.getElementById('secondTeamScore').textContent = sortedTeams[1][1];
+                }
+                
+                if (sortedTeams.length >= 3) {
+                    document.getElementById('thirdTeamName').textContent = sortedTeams[2][0];
+                    document.getElementById('thirdTeamScore').textContent = sortedTeams[2][1];
+                }
+            });
+        }
+
+        function updateLobbyTeamsList() {
+            get(ref(db, 'game/teams')).then(snapshot => {
+                const teams = snapshot.val();
+                const lobbyTeamsList = document.getElementById('lobbyTeamsList');
+                
+                if (teams) {
+                    const teamNames = Object.keys(teams);
+                    const teamsHtml = teamNames.map(teamName => `
+                        <div class="team-card ${teamName === currentTeamName ? 'own-team' : ''}">
+                            <div class="team-icon">👥</div>
+                            <div class="team-name-text">${teamName}</div>
+                        </div>
+                    `).join('');
+                    
+                    lobbyTeamsList.innerHTML = teamsHtml;
+                } else {
+                    lobbyTeamsList.innerHTML = '<p class="empty-state">Teams werden geladen...</p>';
+                }
+            });
         }
 
         function updateLeaderboardDisplay() {

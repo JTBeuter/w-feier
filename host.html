@@ -58,6 +58,7 @@
             </div>
         </div>
 
+
         <!-- Game Screen -->
         <div id="gameScreen" class="screen">
             <!-- Header -->
@@ -76,9 +77,11 @@
                     <h3>Spielkontrolle</h3>
                     
                     <div class="button-group">
+                        <button id="startAnsweringBtn" class="btn btn-primary" style="display: none;">Spiel starten</button>
                         <button id="startVotingBtn" class="btn btn-primary" style="display: none;">Zur Abstimmung übergehen</button>
                         <button id="showResultsBtn" class="btn btn-secondary" style="display: none;">Zu den Ergebnissen</button>
                         <button id="nextQuestionBtn" class="btn btn-primary" style="display: none;">Nächste Frage</button>
+                        <button id="newGameBtn" class="btn btn-primary" style="display: none;">Neues Spiel</button>
                     </div>
                 </div>
 
@@ -91,6 +94,14 @@
                         <p id="statsVotes" style="display: none;"><strong>Stimmen abgegeben:</strong> <span id="voteCount">0</span></p>
                     </div>
                     <button id="resetGameBtn" class="btn btn-secondary">Spiel zurücksetzen</button>
+                </div>
+
+                <!-- Teams Display (Setup Phase) -->
+                <div class="answer-management" id="teamsDisplaySection" style="display: none;">
+                    <h3>Beigetretene Teams</h3>
+                    <div id="hostTeamsList" class="scoreboard">
+                        <p class="empty-state">Warte auf Teams...</p>
+                    </div>
                 </div>
             </div>
 
@@ -184,10 +195,17 @@
         
         // Event Listeners - Game Mode
         document.getElementById('startVotingBtn').addEventListener('click', startVotingPhase);
+        document.getElementById('newGameBtn').addEventListener('click', backToSetup);
         document.getElementById('showResultsBtn').addEventListener('click', (e) => {
             console.log('🔴 showResultsBtn CLICKED');
-            showResults();
+            const buttonText = document.getElementById('showResultsBtn').textContent;
+            if (buttonText === 'Spiel beenden') {
+                showResults(true); // Pass true to indicate game is ending
+            } else {
+                showResults(false);
+            }
         });
+        document.getElementById('startAnsweringBtn').addEventListener('click', startAnsweringPhase);
         document.getElementById('nextQuestionBtn').addEventListener('click', nextQuestion);
         document.getElementById('resetGameBtn').addEventListener('click', resetGame);
         document.getElementById('backToSetupBtn').addEventListener('click', backToSetup);
@@ -333,13 +351,11 @@
                 }
 
                 gameStarted = true;
-                gamePhase = 'answering';
+                gamePhase = 'setup';
                 currentQuestionIndex = 0;
 
-                // Set game phase in database
-                await set(ref(db, 'game/phase'), gamePhase);
-
-                presentQuestion();
+                // Set game phase in database to 'setup' so teams can join waiting lobby
+                await set(ref(db, 'game/phase'), 'setup');
 
                 // Switch to game screen
                 document.getElementById('setupScreen').classList.remove('active');
@@ -417,6 +433,15 @@
                 document.getElementById('showResultsBtn').style.display = 'inline-block';
                 document.getElementById('nextQuestionBtn').style.display = 'none';
                 
+                // Check if this is the last voting question
+                if (currentQuestionIndex === questions.length - 1) {
+                    // Last question - change button text to "Spiel beenden"
+                    document.getElementById('showResultsBtn').textContent = 'Spiel beenden';
+                } else {
+                    // Not last question - use "Zu den Ergebnissen"
+                    document.getElementById('showResultsBtn').textContent = 'Zu den Ergebnissen';
+                }
+                
                 updateGameDisplay();
             } catch (error) {
                 console.error('Error presenting question for voting:', error);
@@ -425,10 +450,32 @@
 
         function updateGameDisplay() {
             let phaseName = 'Setup';
-            if (gamePhase === 'answering') {
+            if (gamePhase === 'setup') {
+                phaseName = '⏳ Warten auf Teams';
+                // Show start answering button during setup
+                document.getElementById('startAnsweringBtn').style.display = 'inline-block';
+                document.getElementById('startVotingBtn').style.display = 'none';
+                document.getElementById('showResultsBtn').style.display = 'none';
+                document.getElementById('nextQuestionBtn').style.display = 'none';
+            } else if (gamePhase === 'answering') {
                 phaseName = '📝 Antwortrunde';
+                document.getElementById('startAnsweringBtn').style.display = 'none';
+                document.getElementById('startVotingBtn').style.display = 'none';
+                document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+                // Reset button text for next question
+                document.getElementById('nextQuestionBtn').textContent = 'Nächste Frage';
+            } else if (gamePhase === 'answering_finished') {
+                phaseName = '⏸️ Antwortphase beendet';
+                document.getElementById('startAnsweringBtn').style.display = 'none';
+                document.getElementById('startVotingBtn').style.display = 'none';
+                document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+                document.getElementById('nextQuestionBtn').textContent = 'Zur Abstimmung übergehen';
             } else if (gamePhase === 'voting') {
                 phaseName = '🗳️ Abstimmungsrunde';
+                document.getElementById('startAnsweringBtn').style.display = 'none';
+                document.getElementById('startVotingBtn').style.display = 'none';
+                document.getElementById('showResultsBtn').style.display = 'inline-block';
+                document.getElementById('nextQuestionBtn').style.display = 'none';
             }
             
             document.getElementById('phaseLabel').textContent = phaseName;
@@ -442,22 +489,59 @@
             const statsAnswers = document.getElementById('statsAnswers');
             const statsVotes = document.getElementById('statsVotes');
             const answersTitle = document.getElementById('answersTitle');
+            const teamsDisplaySection = document.getElementById('teamsDisplaySection');
             
-            if (gamePhase === 'answering') {
+            if (gamePhase === 'setup') {
                 statsAnswers.style.display = 'block';
                 statsVotes.style.display = 'none';
+                teamsDisplaySection.style.display = 'block';
+                answersTitle.textContent = 'Eingegangene Antworten';
+            } else if (gamePhase === 'answering') {
+                statsAnswers.style.display = 'block';
+                statsVotes.style.display = 'none';
+                teamsDisplaySection.style.display = 'none';
                 answersTitle.textContent = 'Eingegangene Antworten';
             } else if (gamePhase === 'voting') {
                 statsAnswers.style.display = 'none';
                 statsVotes.style.display = 'block';
+                teamsDisplaySection.style.display = 'none';
                 answersTitle.textContent = 'Abstimmungsergebnisse';
+            } else {
+                teamsDisplaySection.style.display = 'none';
             }
+        }
+
+        function updateHostTeamsDisplay(teams) {
+            const hostTeamsList = document.getElementById('hostTeamsList');
+            
+            if (teams) {
+                const teamNames = Object.keys(teams);
+                const teamsHtml = teamNames.map(teamName => `
+                    <div class="scoreboard-entry">
+                        <span class="team-name">👥 ${teamName}</span>
+                    </div>
+                `).join('');
+                
+                hostTeamsList.innerHTML = teamsHtml;
+            } else {
+                hostTeamsList.innerHTML = '<p class="empty-state">Warte auf Teams...</p>';
+            }
+        }
+
+        async function startAnsweringPhase() {
+            gamePhase = 'answering';
+            currentQuestionIndex = 0;
+            await set(ref(db, 'game/phase'), gamePhase);
+            await presentQuestion();
+            updateGameDisplay();
         }
 
         async function startVotingPhase() {
             gamePhase = 'voting';
             await set(ref(db, 'game/phase'), gamePhase);
             currentQuestionIndex = 0;
+            // Reset button text
+            document.getElementById('nextQuestionBtn').textContent = 'Nächste Frage';
             document.getElementById('startVotingBtn').style.display = 'none';
             document.getElementById('showResultsBtn').style.display = 'none';
             document.getElementById('nextQuestionBtn').style.display = 'none';
@@ -465,6 +549,18 @@
         }
 
         async function nextQuestion() {
+            // Check if button says "Antwortphase beenden" - if so, transition to that phase
+            const buttonText = document.getElementById('nextQuestionBtn').textContent;
+            
+            if (buttonText === 'Antwortphase beenden') {
+                // Set phase to answering_finished, clients will see transition screen
+                gamePhase = 'answering_finished';
+                await set(ref(db, 'game/phase'), gamePhase);
+                // Reset button text for next action
+                document.getElementById('nextQuestionBtn').textContent = 'Nächste Frage';
+                return;
+            }
+            
             // If coming from results phase, go back to voting phase
             if (gamePhase === 'results') {
                 gamePhase = 'voting';
@@ -480,11 +576,25 @@
                     await set(ref(db, 'game/phase'), gamePhase);
                     backToSetup();
                 }
+            } else if (gamePhase === 'answering_finished') {
+                // Transition from answer phase to voting phase - start voting from first question
+                gamePhase = 'voting';
+                await set(ref(db, 'game/phase'), gamePhase);
+                currentQuestionIndex = 0; // Reset to first question for voting
+                await presentQuestionForVoting();
             } else {
                 currentQuestionIndex++;
                 if (currentQuestionIndex < questions.length) {
                     if (gamePhase === 'answering') {
-                        await presentQuestion();
+                        // Check if next question is the last question
+                        if (currentQuestionIndex === questions.length - 1) {
+                            // Show last question but change button text to "Antwortphase beenden"
+                            await presentQuestion();
+                            document.getElementById('nextQuestionBtn').textContent = 'Antwortphase beenden';
+                        } else {
+                            // Not last question, proceed normally
+                            await presentQuestion();
+                        }
                     } else if (gamePhase === 'voting') {
                         await presentQuestionForVoting();
                     }
@@ -505,8 +615,9 @@
             }
         }
 
-        async function showResults() {
+        async function showResults(isGameEnding = false) {
             console.log('=== showResults() CALLED ===');
+            console.log('isGameEnding:', isGameEnding);
             console.log('Current question:', currentQuestion);
             
             if (!currentQuestion) {
@@ -588,12 +699,18 @@
                 console.log('✅ Scores saved successfully!');
                 console.log('Final scores in DB:', currentScores);
                 
-                // Set game phase to 'results' to show leaderboard on client
-                await set(ref(db, 'game/phase'), 'results');
-                
-                // Update button visibility
-                document.getElementById('showResultsBtn').style.display = 'none';
-                document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+                // Check if this is the last question and game is ending
+                if (isGameEnding) {
+                    // Show celebration screen with top 3 teams
+                    await showCelebrationScreen(currentScores);
+                } else {
+                    // Set game phase to 'results' to show leaderboard on client
+                    await set(ref(db, 'game/phase'), 'results');
+                    
+                    // Update button visibility
+                    document.getElementById('showResultsBtn').style.display = 'none';
+                    document.getElementById('nextQuestionBtn').style.display = 'inline-block';
+                }
                 
             } catch (error) {
                 console.error('❌❌ ERROR in showResults():', error);
@@ -601,6 +718,18 @@
                 console.error('Error code:', error.code);
                 alert('Fehler beim Speichern der Punkte: ' + error.message);
             }
+        }
+
+        async function showCelebrationScreen(finalScores) {
+            // Don't show celebration screen on host, only send to clients via Firebase phase
+            gamePhase = 'finished';
+            await set(ref(db, 'game/phase'), 'celebration');
+            
+            // Update button visibility to show "Neues Spiel" button
+            document.getElementById('showResultsBtn').style.display = 'none';
+            document.getElementById('nextQuestionBtn').style.display = 'none';
+            document.getElementById('startVotingBtn').style.display = 'none';
+            document.getElementById('newGameBtn').style.display = 'inline-block';
         }
 
         function backToSetup() {
@@ -612,6 +741,12 @@
             document.getElementById('setupScreen').classList.add('active');
             document.getElementById('gameScreen').classList.remove('active');
             updateQuestionsDisplay();
+            
+            // Reset button visibility
+            document.getElementById('newGameBtn').style.display = 'none';
+            document.getElementById('showResultsBtn').style.display = 'none';
+            document.getElementById('nextQuestionBtn').style.display = 'none';
+            document.getElementById('startVotingBtn').style.display = 'none';
         }
 
         async function resetGame() {
@@ -668,7 +803,11 @@
             // Listen for teams
             onValue(ref(db, 'game/teams'), (snapshot) => {
                 const teams = snapshot.val();
-                document.getElementById('teamCount').textContent = teams ? Object.keys(teams).length : 0;
+                const teamCount = teams ? Object.keys(teams).length : 0;
+                document.getElementById('teamCount').textContent = teamCount;
+                
+                // Update teams display in setup phase
+                updateHostTeamsDisplay(teams);
             });
         }
 
