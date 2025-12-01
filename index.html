@@ -24,7 +24,6 @@
                     >
                 </div>
                 <button id="joinBtn" class="btn btn-primary">Spiel beitreten</button>
-                <button id="hostBtn" class="btn btn-secondary">Zum Host-Panel</button>
             </div>
         </div>
 
@@ -55,7 +54,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div id="timerDisplay" style="font-size: 1.5em; font-weight: bold; color: #10b981; display: none;">
-                        ⏱️ <span id="timerSeconds">0</span>s
+                        ⏱️ <span id="timerMinutes">0</span>:<span id="timerSeconds">00</span>
                     </div>
                     <button id="leaveBtn" class="btn btn-small">Verlassen</button>
                 </div>
@@ -87,17 +86,21 @@
 
             <!-- Voting Section -->
             <div class="voting-section">
-                <h4>Abstimmen:</h4>
-                <div id="votingArea" class="voting-buttons">
-                    <p class="empty-state">Warte auf Antworten zum Abstimmen...</p>
+                <div class="voting-buttons">
+                    <h4 style="margin-top: 0;">Abstimmen:</h4>
+                    <div id="votingArea">
+                        <p class="empty-state">Warte auf Antworten zum Abstimmen...</p>
+                    </div>
                 </div>
             </div>
 
             <!-- Scoreboard -->
             <div class="scoreboard-section">
-                <h4>Punktestand:</h4>
-                <div id="scoreBoard" class="scoreboard">
-                    <p class="empty-state">Keine Teams bisher...</p>
+                <div class="scoreboard">
+                    <h4 style="margin-top: 0;">Punktestand:</h4>
+                    <div id="scoreBoard">
+                        <p class="empty-state">Keine Teams bisher...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -290,9 +293,16 @@
             const elapsedMs = Date.now() - timerStartTime;
             const remaining = Math.max(0, timerRemaining - Math.floor(elapsedMs / 1000));
             
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            
+            const timerMinutesEl = document.getElementById('timerMinutes');
             const timerSecondsEl = document.getElementById('timerSeconds');
+            if (timerMinutesEl) {
+                timerMinutesEl.textContent = minutes;
+            }
             if (timerSecondsEl) {
-                timerSecondsEl.textContent = remaining;
+                timerSecondsEl.textContent = seconds.toString().padStart(2, '0');
             }
             
             // Change color as time runs out
@@ -364,10 +374,12 @@
                     // Set background color based on correct/wrong
                     if (teamVoteData.isCorrect) {
                         voteIndicatorEl.textContent = '✓';
+                        voteIndicatorEl.style.color = '#86efac'; // Green
                         timesUpAnswerBox.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                         voteTeamNameEl.textContent = '';
                     } else {
                         voteIndicatorEl.textContent = '✗';
+                        voteIndicatorEl.style.color = '#fca5a5'; // Light red
                         timesUpAnswerBox.style.background = 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)';
                         voteTeamNameEl.innerHTML = `<strong>Antwort von Team ${teamVoteData.teamName}</strong>`;
                     }
@@ -388,7 +400,6 @@
 
         // Event Listeners
         document.getElementById('joinBtn').addEventListener('click', joinGame);
-        document.getElementById('hostBtn').addEventListener('click', () => window.location.href = 'host.html');
         document.getElementById('leaveBtn').addEventListener('click', leaveGame);
         document.getElementById('submitAnswerBtn').addEventListener('click', submitAnswer);
         document.getElementById('leaveLeaderboardBtn').addEventListener('click', leaveGame);
@@ -464,6 +475,18 @@
                             // Check if team already voted
                             get(ref(db, `game/votes/${currentQuestion.id}/${currentTeamName}`)).then(voteSnapshot => {
                                 teamVote = voteSnapshot.val();
+                                
+                                // If team voted, restore the vote data for display after page refresh
+                                if (teamVote && allAnswers && allAnswers[currentQuestion.id] && allAnswers[currentQuestion.id][teamVote]) {
+                                    const answerData = allAnswers[currentQuestion.id][teamVote];
+                                    const isCorrect = teamVote === 'Lösung' || (currentQuestion && answerData.text === currentQuestion.correct);
+                                    teamVoteData = {
+                                        teamName: teamVote,
+                                        answerText: answerData.text,
+                                        isCorrect: isCorrect
+                                    };
+                                }
+                                
                                 if (allAnswers && allAnswers[currentQuestion.id]) {
                                     let votingHtml = '';
                                     const teamAnswers = allAnswers[currentQuestion.id];
@@ -611,9 +634,12 @@
                         const answerRef = ref(db, `game/answers/${question.id}/${currentTeamName}`);
                         get(answerRef).then(snap => {
                             if (snap.exists()) {
+                                const answerData = snap.val();
+                                teamAnswer = answerData.text; // Set the variable to maintain state after refresh
                                 document.getElementById('answerForm').style.display = 'none';
                                 document.getElementById('answerSubmitted').style.display = 'block';
                             } else {
+                                teamAnswer = null; // Clear if no answer found
                                 document.getElementById('answerForm').style.display = 'block';
                                 document.getElementById('answerSubmitted').style.display = 'none';
                             }

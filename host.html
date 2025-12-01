@@ -96,7 +96,7 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 20px;">
                     <div id="hostTimerDisplay" style="font-size: 1.5em; font-weight: bold; color: #10b981; display: none;">
-                        ⏱️ <span id="hostTimerSeconds">0</span>s
+                        ⏱️ <span id="hostTimerMinutes">0</span>:<span id="hostTimerSeconds">00</span>
                     </div>
                     <button id="backToSetupBtn" class="btn btn-secondary" style="width: auto;">Zurück zum Setup</button>
                 </div>
@@ -104,6 +104,13 @@
 
             <!-- Management Panel -->
             <div class="management-panel">
+                <!-- QR Code Display (Setup Phase) -->
+                <div class="answer-management" id="qrCodeSection" style="text-align: center;">
+                    <h3>QR-Code zum Beitreten</h3>
+                    <img src="QR-code.png" alt="QR-Code zum Beitreten" style="max-width: 300px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                    <button id="downloadQrBtn" class="btn btn-secondary" style="width: auto;">⬇️ QR-Code herunterladen</button>
+                </div>
+
                 <!-- Game Controls -->
                 <div class="question-form">
                     <h3>Spielkontrolle</h3>
@@ -125,7 +132,7 @@
                         <p id="statsAnswers"><strong>Eingegangene Antworten:</strong> <span id="answerCount">0</span></p>
                         <p id="statsVotes" style="display: none;"><strong>Stimmen abgegeben:</strong> <span id="voteCount">0</span></p>
                     </div>
-                    <button id="resetGameBtn" class="btn btn-secondary">Spiel zurücksetzen</button>
+                    <button id="resetGameBtn" class="btn btn-danger">Spiel zurücksetzen</button>
                 </div>
 
                 <!-- Teams Display (Setup Phase) -->
@@ -246,6 +253,7 @@
         document.getElementById('resetGameBtn').addEventListener('click', resetGame);
         document.getElementById('backToSetupBtn').addEventListener('click', backToSetup);
         document.getElementById('backToMainBtn').addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('downloadQrBtn').addEventListener('click', downloadQrCode);
 
         // Load saved questions on page load
         loadQuestionsFromStorage();
@@ -512,6 +520,8 @@
                 document.getElementById('startVotingBtn').style.display = 'none';
                 document.getElementById('showResultsBtn').style.display = 'none';
                 document.getElementById('nextQuestionBtn').style.display = 'none';
+                // Show QR code during waiting phase
+                document.getElementById('qrCodeSection').style.display = 'block';
             } else if (gamePhase === 'answering') {
                 phaseName = '📝 Antwortrunde';
                 document.getElementById('startAnsweringBtn').style.display = 'none';
@@ -519,18 +529,24 @@
                 document.getElementById('nextQuestionBtn').style.display = 'inline-block';
                 // Reset button text for next question
                 document.getElementById('nextQuestionBtn').textContent = 'Nächste Frage';
+                // Hide QR code after game starts
+                document.getElementById('qrCodeSection').style.display = 'none';
             } else if (gamePhase === 'answering_finished') {
                 phaseName = '⏸️ Antwortphase beendet';
                 document.getElementById('startAnsweringBtn').style.display = 'none';
                 document.getElementById('startVotingBtn').style.display = 'none';
                 document.getElementById('nextQuestionBtn').style.display = 'inline-block';
                 document.getElementById('nextQuestionBtn').textContent = 'Zur Abstimmung übergehen';
+                // Hide QR code after game starts
+                document.getElementById('qrCodeSection').style.display = 'none';
             } else if (gamePhase === 'voting') {
                 phaseName = '🗳️ Abstimmungsrunde';
                 document.getElementById('startAnsweringBtn').style.display = 'none';
                 document.getElementById('startVotingBtn').style.display = 'none';
                 document.getElementById('showResultsBtn').style.display = 'inline-block';
                 document.getElementById('nextQuestionBtn').style.display = 'none';
+                // Hide QR code after game starts
+                document.getElementById('qrCodeSection').style.display = 'none';
             }
             
             document.getElementById('phaseLabel').textContent = phaseName;
@@ -823,6 +839,19 @@
             document.getElementById('startVotingBtn').style.display = 'none';
         }
 
+        function downloadQrCode() {
+            const qrImage = document.querySelector('#qrCodeSection img');
+            if (!qrImage) return;
+            
+            // Create a link element and trigger download
+            const link = document.createElement('a');
+            link.href = qrImage.src;
+            link.download = 'QR-Code-w-feier.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         async function resetGame() {
             if (confirm('Willst du das ganze Spiel wirklich zurücksetzen? Das kann nicht rückgängig gemacht werden.')) {
                 try {
@@ -870,9 +899,16 @@
             const elapsedSeconds = now - question.timerStartTime;
             const remainingSeconds = Math.max(0, question.timerDuration - elapsedSeconds);
             
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            
+            const timerMinutesEl = document.getElementById('hostTimerMinutes');
             const timerSecondsEl = document.getElementById('hostTimerSeconds');
+            if (timerMinutesEl) {
+                timerMinutesEl.textContent = minutes;
+            }
             if (timerSecondsEl) {
-                timerSecondsEl.textContent = remainingSeconds;
+                timerSecondsEl.textContent = seconds.toString().padStart(2, '0');
             }
             
             // Change color as time runs out

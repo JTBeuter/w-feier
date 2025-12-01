@@ -34,6 +34,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0;
+    position: relative;
 }
 
 /* Screens */
@@ -71,7 +72,6 @@ body {
     color: #10b981 !important;
     font-size: 1.5em !important;
     font-weight: bold !important;
-}
     display: block;
 }
 
@@ -86,12 +86,18 @@ body {
 
 /* Login Screen */
 #loginScreen {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    overflow: hidden;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+    overflow: hidden !important;
+    z-index: 1000 !important;
 }
 
 .login-box {
@@ -134,6 +140,7 @@ label {
 }
 
 input[type="text"],
+input[type="number"],
 textarea {
     width: 100%;
     padding: 12px;
@@ -146,6 +153,7 @@ textarea {
 }
 
 input[type="text"]:focus,
+input[type="number"]:focus,
 textarea:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -166,13 +174,13 @@ textarea:focus {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), #b91c1c);
+    background: linear-gradient(135deg, #10b981, #059669);
     color: white;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(196, 30, 58, 0.4);
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
 }
 
 .btn-primary:active {
@@ -191,14 +199,14 @@ textarea:focus {
 }
 
 .btn-danger {
-    background: var(--danger-color);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
-    border: 2px solid var(--danger-color);
+    border: none;
 }
 
 .btn-danger:hover {
-    background: #d12323;
-    border-color: #d12323;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.4);
 }
 
 .btn-small {
@@ -217,6 +225,9 @@ textarea:focus {
     padding: 15px;
     margin-bottom: 10px;
     font-size: 0.95rem;
+    word-wrap: break-word;
+    white-space: normal;
+    max-width: 100%;
 }
 
 .btn-vote:hover {
@@ -280,6 +291,7 @@ textarea:focus {
 .voting-section,
 .scoreboard-section {
     display: none;
+    margin-bottom: 20px
 }
 
 .voting-section.show {
@@ -339,9 +351,10 @@ textarea:focus {
 }
 
 h4 {
-    color: var(--primary-color);
+    color: var(--text-color);
     margin-bottom: 15px;
     font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .question-box {
@@ -364,11 +377,12 @@ h4 {
 #answerForm {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
 #answerInput {
     width: 100%;
+    margin-bottom: 15px;
 }
 
 .info-box {
@@ -390,6 +404,13 @@ h4 {
     padding: 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.voting-buttons h4 {
+    margin-bottom: 15px;
 }
 
 .voting-button {
@@ -432,6 +453,13 @@ h4 {
     padding: 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.scoreboard h4 {
+    margin-bottom: 15px;
 }
 
 .leaderboard-section {
@@ -517,6 +545,7 @@ h4 {
     background: var(--card-bg);
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    margin-top: 25px
 }
 
 .host-header h1 {
@@ -542,8 +571,20 @@ h4 {
     border: 1px solid var(--border-color);
 }
 
+.question-form h3 {
+    margin-bottom: 15px;
+}
+
 .form-section {
     margin-bottom: 20px;
+}
+
+.form-section label {
+    display: block;
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
 }
 
 .form-section h3 {
@@ -930,6 +971,8 @@ textarea {
     border-radius: 12px;
     padding: 30px;
     margin-bottom: 20px !important;
+    max-width: 900px;
+    width: 100%;
 }
 
 .lobby-container p {
@@ -938,6 +981,8 @@ textarea {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px !important;
+    max-width: 900px;
+    width: 100%;
 }
 
 .waiting-teams-display {
