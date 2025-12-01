@@ -45,6 +45,33 @@
                     </div>
                 </div>
 
+                <!-- Time Settings -->
+                <div class="answer-management">
+                    <h3>Zeiteinstellungen</h3>
+                    <div class="form-section">
+                        <label for="answeringTimeInput">Zeit für Antwortphase (Sekunden):</label>
+                        <input 
+                            type="number" 
+                            id="answeringTimeInput" 
+                            placeholder="z.B. 45"
+                            min="10"
+                            max="300"
+                            value="45"
+                        >
+                    </div>
+                    <div class="form-section">
+                        <label for="votingTimeInput">Zeit für Abstimmungsphase (Sekunden):</label>
+                        <input 
+                            type="number" 
+                            id="votingTimeInput" 
+                            placeholder="z.B. 30"
+                            min="10"
+                            max="300"
+                            value="30"
+                        >
+                    </div>
+                </div>
+
                 <!-- Questions List -->
                 <div class="answer-management">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -67,7 +94,12 @@
                     <h1>🎮 Host Panel</h1>
                     <p style="color: #94a3b8; margin-top: 5px;"><span id="phaseLabel">Setup</span> - Frage <span id="currentQuestionNumber">1</span> / <span id="totalQuestions">0</span></p>
                 </div>
-                <button id="backToSetupBtn" class="btn btn-secondary" style="width: auto;">Zurück zum Setup</button>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div id="hostTimerDisplay" style="font-size: 1.5em; font-weight: bold; color: #10b981; display: none;">
+                        ⏱️ <span id="hostTimerSeconds">0</span>s
+                    </div>
+                    <button id="backToSetupBtn" class="btn btn-secondary" style="width: auto;">Zurück zum Setup</button>
+                </div>
             </header>
 
             <!-- Management Panel -->
@@ -157,6 +189,10 @@
         let gameStarted = false;
         let editingIndex = null;
         let gamePhase = 'setup'; // 'setup', 'waiting_for_teams', 'answering', 'voting', 'finished'
+        
+        // Timer variables for host display
+        let hostTimerInterval = null;
+        let hostCurrentQuestion = null;
 
         // Load questions from localStorage on page load
         function loadQuestionsFromStorage() {
@@ -382,11 +418,18 @@
             currentQuestion = questions[currentQuestionIndex];
 
             try {
-                // Set current question
+                // Get current server timestamp for timer synchronization
+                const serverTime = Math.floor(Date.now() / 1000);
+                const answeringTimeInput = document.getElementById('answeringTimeInput');
+                const answeringTime = parseInt(answeringTimeInput.value) || 45;
+                
+                // Set current question with timer info
                 await set(ref(db, 'game/currentQuestion'), {
                     id: currentQuestion.id,
                     text: currentQuestion.text,
-                    correct: currentQuestion.correct
+                    correct: currentQuestion.correct,
+                    timerStartTime: serverTime,
+                    timerDuration: answeringTime
                 });
 
                 // Reset state for this question
@@ -412,11 +455,18 @@
             currentQuestion = questions[currentQuestionIndex];
 
             try {
-                // Set current question
+                // Get current server timestamp for timer synchronization
+                const serverTime = Math.floor(Date.now() / 1000);
+                const votingTimeInput = document.getElementById('votingTimeInput');
+                const votingTime = parseInt(votingTimeInput.value) || 30;
+                
+                // Set current question with timer info
                 await set(ref(db, 'game/currentQuestion'), {
                     id: currentQuestion.id,
                     text: currentQuestion.text,
-                    correct: currentQuestion.correct
+                    correct: currentQuestion.correct,
+                    timerStartTime: serverTime,
+                    timerDuration: votingTime
                 });
 
                 // Add correct answer as a regular answer with team name 'Lösung' if not already there
@@ -543,6 +593,12 @@
             currentQuestionIndex = 0;
             // Clear kickAll flag so teams are not kicked anymore
             await set(ref(db, 'game/kickAll'), false);
+            
+            // Read answering time from input and save to database
+            const answeringTimeInput = document.getElementById('answeringTimeInput');
+            const answeringTime = parseInt(answeringTimeInput.value) || 45;
+            await set(ref(db, 'game/answeringTime'), answeringTime);
+            
             await set(ref(db, 'game/phase'), gamePhase);
             await presentQuestion();
             updateGameDisplay();
@@ -550,6 +606,12 @@
 
         async function startVotingPhase() {
             gamePhase = 'voting';
+            
+            // Read voting time from input and save to database
+            const votingTimeInput = document.getElementById('votingTimeInput');
+            const votingTime = parseInt(votingTimeInput.value) || 30;
+            await set(ref(db, 'game/votingTime'), votingTime);
+            
             await set(ref(db, 'game/phase'), gamePhase);
             currentQuestionIndex = 0;
             // Reset button text
@@ -782,6 +844,59 @@
             }
         };
 
+        function startHostTimerDisplay(question) {
+            if (!question || !question.timerStartTime || !question.timerDuration) return;
+            
+            // Stop any existing timer
+            stopHostTimerDisplay();
+            
+            // Show timer display
+            const timerDisplay = document.getElementById('hostTimerDisplay');
+            if (timerDisplay) timerDisplay.style.display = 'flex';
+            
+            // Update immediately
+            updateHostTimerDisplay(question);
+            
+            // Update every 100ms
+            hostTimerInterval = setInterval(() => {
+                updateHostTimerDisplay(hostCurrentQuestion);
+            }, 100);
+        }
+
+        function updateHostTimerDisplay(question) {
+            if (!question || !question.timerStartTime || !question.timerDuration) return;
+            
+            const now = Math.floor(Date.now() / 1000);
+            const elapsedSeconds = now - question.timerStartTime;
+            const remainingSeconds = Math.max(0, question.timerDuration - elapsedSeconds);
+            
+            const timerSecondsEl = document.getElementById('hostTimerSeconds');
+            if (timerSecondsEl) {
+                timerSecondsEl.textContent = remainingSeconds;
+            }
+            
+            // Change color as time runs out
+            const timerDisplay = document.getElementById('hostTimerDisplay');
+            if (timerDisplay) {
+                if (remainingSeconds <= 10) {
+                    timerDisplay.style.color = '#ef4444'; // Red
+                } else if (remainingSeconds <= 20) {
+                    timerDisplay.style.color = '#f97316'; // Orange
+                } else {
+                    timerDisplay.style.color = '#10b981'; // Green
+                }
+            }
+        }
+
+        function stopHostTimerDisplay() {
+            if (hostTimerInterval) {
+                clearInterval(hostTimerInterval);
+                hostTimerInterval = null;
+            }
+            const timerDisplay = document.getElementById('hostTimerDisplay');
+            if (timerDisplay) timerDisplay.style.display = 'none';
+        }
+
         function startListeners() {
             // Listen for game phase changes
             onValue(ref(db, 'game/phase'), (snapshot) => {
@@ -796,6 +911,15 @@
             // Listen for current question
             onValue(ref(db, 'game/currentQuestion'), (snapshot) => {
                 currentQuestion = snapshot.val();
+                hostCurrentQuestion = currentQuestion;
+                
+                // Start timer display if question has timer info
+                if (currentQuestion && currentQuestion.timerStartTime && currentQuestion.timerDuration) {
+                    startHostTimerDisplay(currentQuestion);
+                } else {
+                    stopHostTimerDisplay();
+                }
+                
                 updateCurrentQuestionDisplay();
             });
 

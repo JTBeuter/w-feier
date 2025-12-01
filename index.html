@@ -53,7 +53,12 @@
                         <span id="teamScore">0</span> Punkte
                     </div>
                 </div>
-                <button id="leaveBtn" class="btn btn-small">Verlassen</button>
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div id="timerDisplay" style="font-size: 1.5em; font-weight: bold; color: #10b981; display: none;">
+                        ⏱️ <span id="timerSeconds">0</span>s
+                    </div>
+                    <button id="leaveBtn" class="btn btn-small">Verlassen</button>
+                </div>
             </header>
 
             <!-- Question Display -->
@@ -105,6 +110,30 @@
                     <h2 style="color: white; font-size: 1.5em; margin-bottom: 15px; text-align: center;">Die Antworten sind eingegangen!</h2>
                     <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center; margin-bottom: 20px;">Alle Teams haben ihre Antworten eingereicht. Jetzt wird es spannend!</p>
                     <p style="color: rgba(255,255,255,0.8); font-size: 1em; text-align: center;">Der Host startet gleich die Abstimmungsphase, wo ihr für die beste Antwort stimmen könnt.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time's Up Screen -->
+        <div id="timesUpScreen" class="screen">
+            <div class="transition-box" style="margin-top: 80px;">
+                <h1 style="font-size: 3em; margin-bottom: 40px;">⏱️ Die Zeit ist um!</h1>
+                <div id="timesUpAnswerBox" style="padding: 50px; border-radius: 20px; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);">
+                    <!-- Answering Phase Display -->
+                    <div id="timesUpAnswerContent" style="display: none; text-align: center;">
+                        <p style="color: rgba(255,255,255,0.9); font-size: 0.95em; margin-bottom: 25px;">Deine Antwort:</p>
+                        <p id="timesUpAnswerText" style="color: white; font-size: 1.8em; font-weight: bold; text-align: center; background: rgba(0,0,0,0.25); padding: 20px; border-radius: 12px; margin-bottom: 15px;"></p>
+                        <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
+                    </div>
+                    <!-- Voting Phase Display -->
+                    <div id="timesUpVoteContent" style="display: none; text-align: center;">
+                        <div id="timesUpVoteAnswerBox" style="background: rgba(0,0,0,0.25); padding: 30px; border-radius: 12px; margin-bottom: 25px;">
+                            <p id="timesUpVoteIndicator" style="color: white; font-size: 2.5em; margin-bottom: 15px;"></p>
+                            <p id="timesUpVoteText" style="color: white; font-size: 2em; font-weight: bold; word-wrap: break-word;"></p>
+                        </div>
+                        <p id="timesUpVoteTeamName" style="color: rgba(255,255,255,0.95); font-size: 1.1em; margin-bottom: 20px;"></p>
+                        <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -222,8 +251,16 @@
         let currentUser = null;
         let roundFinished = false;
         let currentQuestion = null;
-        let teamVote = null; // Track which answer this team voted for
+        let teamVote = null; // Track which answer this team voted for (team name)
+        let teamVoteData = null; // Track full vote data (team name, answer text, is correct)
+        let teamAnswer = null; // Track the current answer submitted by this team
         let gamePhase = 'setup'; // Syncs with host: 'setup', 'answering', 'voting', 'finished'
+        let timerExpired = false; // Track if timer has expired
+        
+        // Timer variables
+        let timerInterval = null;
+        let timerRemaining = 0;
+        let timerStartTime = null;
 
         // Anonymous sign-in
         signInAnonymously(auth)
@@ -255,6 +292,113 @@
                     console.error('Error checking team session:', error);
                     localStorage.removeItem('wfeier_teamName');
                 });
+            }
+        }
+
+        // Timer Functions
+        function startTimer(duration) {
+            // Stop any existing timer
+            stopTimer();
+            
+            timerRemaining = duration;
+            timerStartTime = Date.now();
+            
+            // Show timer display
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) timerDisplay.style.display = 'flex';
+            
+            // Update display immediately
+            updateTimerDisplay();
+            
+            // Update timer every 100ms for smooth countdown
+            timerInterval = setInterval(updateTimerDisplay, 100);
+        }
+
+        function updateTimerDisplay() {
+            if (timerStartTime === null) return;
+            
+            const elapsedMs = Date.now() - timerStartTime;
+            const remaining = Math.max(0, timerRemaining - Math.floor(elapsedMs / 1000));
+            
+            const timerSecondsEl = document.getElementById('timerSeconds');
+            if (timerSecondsEl) {
+                timerSecondsEl.textContent = remaining;
+            }
+            
+            // Change color as time runs out
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) {
+                if (remaining <= 10) {
+                    timerDisplay.style.color = '#ef4444'; // Red
+                } else if (remaining <= 20) {
+                    timerDisplay.style.color = '#f97316'; // Orange
+                } else {
+                    timerDisplay.style.color = '#10b981'; // Green
+                }
+            }
+            
+            // When timer reaches 0
+            if (remaining <= 0) {
+                stopTimer();
+                handleTimerExpired();
+            }
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (timerDisplay) timerDisplay.style.display = 'none';
+        }
+
+        function handleTimerExpired() {
+            console.log('⏱️ Timer expired for phase:', gamePhase);
+            timerExpired = true;
+            
+            // Show the times up screen
+            const timesUpScreen = document.getElementById('timesUpScreen');
+            const gameScreen = document.getElementById('gameScreen');
+            const timesUpAnswerBox = document.getElementById('timesUpAnswerBox');
+            
+            if (timesUpScreen && gameScreen && timesUpAnswerBox) {
+                gameScreen.style.display = 'none';
+                timesUpScreen.style.display = 'flex';
+                
+                // Show submitted answer if in answering phase
+                const timesUpAnswerContent = document.getElementById('timesUpAnswerContent');
+                if (gamePhase === 'answering' && teamAnswer) {
+                    timesUpAnswerContent.style.display = 'block';
+                    document.getElementById('timesUpVoteContent').style.display = 'none';
+                    document.getElementById('timesUpAnswerText').textContent = teamAnswer;
+                    timesUpAnswerBox.style.background = 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)';
+                } else if (gamePhase === 'voting' && teamVoteData) {
+                    // Show selected vote if in voting phase
+                    const timesUpVoteContent = document.getElementById('timesUpVoteContent');
+                    const voteIndicatorEl = document.getElementById('timesUpVoteIndicator');
+                    const voteTextEl = document.getElementById('timesUpVoteText');
+                    const voteTeamNameEl = document.getElementById('timesUpVoteTeamName');
+                    
+                    timesUpAnswerContent.style.display = 'none';
+                    timesUpVoteContent.style.display = 'block';
+                    
+                    // Set background color based on correct/wrong
+                    if (teamVoteData.isCorrect) {
+                        voteIndicatorEl.textContent = '✓';
+                        timesUpAnswerBox.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        voteTeamNameEl.textContent = '';
+                    } else {
+                        voteIndicatorEl.textContent = '✗';
+                        timesUpAnswerBox.style.background = 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)';
+                        voteTeamNameEl.innerHTML = `<strong>Antwort von Team ${teamVoteData.teamName}</strong>`;
+                    }
+                    
+                    voteTextEl.textContent = teamVoteData.answerText;
+                } else {
+                    timesUpAnswerContent.style.display = 'none';
+                    document.getElementById('timesUpVoteContent').style.display = 'none';
+                }
             }
         }
 
@@ -421,7 +565,27 @@
                     previousPhase = gamePhase;
                     gamePhase = newPhase;
                     console.log('🔄 Game phase changed to:', gamePhase);
-                    updateUIForPhase();
+                    
+                    // Stop timer if phase ended early (e.g., answering -> answering_finished)
+                    // Don't change the UI, just stop the countdown
+                    if ((previousPhase === 'answering' || previousPhase === 'voting') && 
+                        (gamePhase === 'answering_finished' || gamePhase === 'voting' || gamePhase === 'results')) {
+                        stopTimer();
+                    } else {
+                        // Timer will be started when question data is received for new phases
+                        updateUIForPhase();
+                    }
+                } else if ((gamePhase === 'answering' || gamePhase === 'voting') && currentQuestion && currentQuestion.timerStartTime) {
+                    // Restore timer from server data if question has timer info
+                    const now = Math.floor(Date.now() / 1000);
+                    const elapsedSeconds = now - currentQuestion.timerStartTime;
+                    const remainingSeconds = Math.max(0, currentQuestion.timerDuration - elapsedSeconds);
+                    
+                    if (remainingSeconds > 0) {
+                        startTimer(remainingSeconds);
+                    } else {
+                        handleTimerExpired();
+                    }
                 }
             });
 
@@ -431,11 +595,35 @@
                 const question = currentQuestion;
                 const questionArea = document.getElementById('questionArea');
                 
-                // Reset vote for new question
+                // Reset vote and answer for new question
                 teamVote = null;
+                teamVoteData = null;
+                teamAnswer = null;
+                timerExpired = false;
+                
+                // Hide timesUpScreen when new question arrives
+                const timesUpScreen = document.getElementById('timesUpScreen');
+                const gameScreen = document.getElementById('gameScreen');
+                if (timesUpScreen && gameScreen && timerExpired === false) {
+                    timesUpScreen.style.display = 'none';
+                    gameScreen.style.display = 'block';
+                }
                 
                 if (question) {
                     questionArea.innerHTML = `<h3>${question.text}</h3>`;
+                    
+                    // Start timer if question has timer data and we're in answering/voting phase
+                    if ((gamePhase === 'answering' || gamePhase === 'voting') && question.timerStartTime && question.timerDuration) {
+                        const now = Math.floor(Date.now() / 1000);
+                        const elapsedSeconds = now - question.timerStartTime;
+                        const remainingSeconds = Math.max(0, question.timerDuration - elapsedSeconds);
+                        
+                        if (remainingSeconds > 0) {
+                            startTimer(remainingSeconds);
+                        } else {
+                            handleTimerExpired();
+                        }
+                    }
                     
                     // Only show answer form during answering phase
                     if (gamePhase === 'answering') {
@@ -459,6 +647,7 @@
                     questionArea.innerHTML = '<h3>Wartet auf Frage...</h3>';
                     document.getElementById('answerForm').style.display = 'none';
                     document.getElementById('answerSubmitted').style.display = 'none';
+                    stopTimer();
                 }
                 
                 // Update voting display when question changes
@@ -559,9 +748,18 @@
         
         function updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen,
                                        waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn) {
+            const timesUpScreen = document.getElementById('timesUpScreen');
+            
             if (gamePhase === 'answering') {
                 // Show game screen with answer section, hide voting and leaderboard
-                gameScreen.style.display = 'block';
+                // If timer has expired, show timesUpScreen instead
+                if (timerExpired) {
+                    gameScreen.style.display = 'none';
+                    if (timesUpScreen) timesUpScreen.style.display = 'flex';
+                } else {
+                    gameScreen.style.display = 'block';
+                    if (timesUpScreen) timesUpScreen.style.display = 'none';
+                }
                 transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
                 celebrationScreen.style.display = 'none';
@@ -573,13 +771,21 @@
             } else if (gamePhase === 'answering_finished') {
                 // Show transition screen
                 gameScreen.style.display = 'none';
+                if (timesUpScreen) timesUpScreen.style.display = 'none';
                 transitionScreen.style.display = 'block';
                 leaderboardScreen.style.display = 'none';
                 celebrationScreen.style.display = 'none';
                 waitingLobbyScreen.style.display = 'none';
             } else if (gamePhase === 'voting') {
                 // Show game screen with voting section, hide answer input
-                gameScreen.style.display = 'block';
+                // If timer has expired, show timesUpScreen instead
+                if (timerExpired) {
+                    gameScreen.style.display = 'none';
+                    if (timesUpScreen) timesUpScreen.style.display = 'flex';
+                } else {
+                    gameScreen.style.display = 'block';
+                    if (timesUpScreen) timesUpScreen.style.display = 'none';
+                }
                 transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
                 celebrationScreen.style.display = 'none';
@@ -591,6 +797,7 @@
             } else if (gamePhase === 'results') {
                 // Show leaderboard screen
                 gameScreen.style.display = 'none';
+                if (timesUpScreen) timesUpScreen.style.display = 'none';
                 transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'block';
                 celebrationScreen.style.display = 'none';
@@ -599,6 +806,7 @@
             } else if (gamePhase === 'celebration') {
                 // Show celebration screen
                 gameScreen.style.display = 'none';
+                if (timesUpScreen) timesUpScreen.style.display = 'none';
                 transitionScreen.style.display = 'none';
                 leaderboardScreen.style.display = 'none';
                 celebrationScreen.style.display = 'block';
@@ -698,6 +906,11 @@
                     return;
                 }
                 
+                // Get the answer data to display
+                const answerRef = ref(db, `game/answers/${questionId}/${teamName}`);
+                const answerSnapshot = await get(answerRef);
+                const answerData = answerSnapshot.val();
+                
                 // Store the vote
                 await set(ref(db, `game/votes/${questionId}/${currentTeamName}`), teamName);
                 
@@ -708,6 +921,17 @@
                 });
                 
                 teamVote = teamName;
+                
+                // Store full vote data for display
+                if (answerData) {
+                    const isCorrect = teamName === 'Lösung' || (currentQuestion && answerData.text === currentQuestion.correct);
+                    teamVoteData = {
+                        teamName: teamName,
+                        answerText: answerData.text,
+                        isCorrect: isCorrect
+                    };
+                }
+                
                 updateVotingDisplay();
             } catch (error) {
                 console.error('Voting error:', error);
@@ -726,17 +950,33 @@
                 const snapshot = await get(questionRef);
                 const question = snapshot.val();
 
-                if (question) {
-                    await set(ref(db, `game/answers/${question.id}/${currentTeamName}`), {
-                        text: answerText,
-                        votes: 0,
-                        submittedAt: new Date().toISOString()
-                    });
-
-                    document.getElementById('answerInput').value = '';
-                    document.getElementById('answerForm').style.display = 'none';
-                    document.getElementById('answerSubmitted').style.display = 'block';
+                if (!question) {
+                    alert('Keine aktive Frage - bitte warte auf die nächste Frage');
+                    return;
                 }
+
+                // Check if answer window is still open by comparing current time with timer
+                const now = Math.floor(Date.now() / 1000);
+                const elapsedSeconds = now - question.timerStartTime;
+                const remainingSeconds = question.timerDuration - elapsedSeconds;
+
+                if (remainingSeconds <= 0) {
+                    alert('Die Zeit zum Beantworten ist abgelaufen!');
+                    return;
+                }
+
+                // Store answer in local variable for display
+                teamAnswer = answerText;
+                
+                await set(ref(db, `game/answers/${question.id}/${currentTeamName}`), {
+                    text: answerText,
+                    votes: 0,
+                    submittedAt: new Date().toISOString()
+                });
+
+                document.getElementById('answerInput').value = '';
+                document.getElementById('answerForm').style.display = 'none';
+                document.getElementById('answerSubmitted').style.display = 'block';
             } catch (error) {
                 console.error('Submit error:', error);
                 alert('Fehler beim Einreichen der Antwort');
