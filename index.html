@@ -230,8 +230,33 @@
             .then(user => {
                 currentUser = user;
                 console.log("Authenticated as:", user.user.uid);
+                // After authentication, check if team has a saved session
+                checkAndRestoreSession();
             })
             .catch(error => console.error("Auth error:", error));
+
+        // Check if team has a saved session in localStorage
+        function checkAndRestoreSession() {
+            const savedTeamName = localStorage.getItem('wfeier_teamName');
+            if (savedTeamName) {
+                // Verify the team still exists in the game
+                get(ref(db, `game/teams/${savedTeamName}`)).then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Team exists in game, restore the session
+                        currentTeamName = savedTeamName;
+                        console.log('✓ Session restored for team:', currentTeamName);
+                        showGameScreen();
+                        startListeners();
+                    } else {
+                        // Team doesn't exist in game, clear saved session
+                        localStorage.removeItem('wfeier_teamName');
+                    }
+                }).catch(error => {
+                    console.error('Error checking team session:', error);
+                    localStorage.removeItem('wfeier_teamName');
+                });
+            }
+        }
 
         // Event Listeners
         document.getElementById('joinBtn').addEventListener('click', joinGame);
@@ -254,6 +279,8 @@
                 return;
             }
             currentTeamName = teamName;
+            // Save team name to localStorage for session persistence
+            localStorage.setItem('wfeier_teamName', teamName);
             // Create team in database
             await set(ref(db, `game/teams/${teamName}`), {
                 name: teamName,
@@ -718,6 +745,8 @@
 
         function leaveGame() {
             currentTeamName = null;
+            // Clear saved session from localStorage
+            localStorage.removeItem('wfeier_teamName');
             const loginScreen = document.getElementById('loginScreen');
             const gameScreen = document.getElementById('gameScreen');
             
