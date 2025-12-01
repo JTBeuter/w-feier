@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiel beendet - Nobody's Perfect</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+        import { getAuth } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAGZy88cHc92jhh2U5DhNUVQQjMEWQsm4I",
+            authDomain: "wfeier-4cd6c.firebaseapp.com",
+            databaseURL: "https://wfeier-4cd6c-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "wfeier-4cd6c",
+            storageBucket: "wfeier-4cd6c.appspot.com",
+            messagingSenderId: "850619519333",
+            appId: "1:850619519333:web:cc6a6d3fcff98934659d72"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+
+        function loadCelebrationData() {
+            get(ref(db, 'game/scores')).then(snapshot => {
+                const scores = snapshot.val() || {};
+                const sortedTeams = Object.entries(scores)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                
+                if (sortedTeams.length >= 1) {
+                    document.getElementById('firstTeamName').textContent = sortedTeams[0][0];
+                    document.getElementById('firstTeamScore').textContent = sortedTeams[0][1];
+                }
+                
+                if (sortedTeams.length >= 2) {
+                    document.getElementById('secondTeamName').textContent = sortedTeams[1][0];
+                    document.getElementById('secondTeamScore').textContent = sortedTeams[1][1];
+                }
+                
+                if (sortedTeams.length >= 3) {
+                    document.getElementById('thirdTeamName').textContent = sortedTeams[2][0];
+                    document.getElementById('thirdTeamScore').textContent = sortedTeams[2][1];
+                }
+            });
+        }
+
+        loadCelebrationData();
+    </script>
+</head>
+<body>
+    <div class="celebration-container">
+        <h1 style="font-size: 3em; margin-bottom: 30px; animation: pulse 0.6s ease-in-out; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); display: inline-block; margin-left: auto; margin-right: auto;">🎉 Spiel beendet! 🎉</h1>
+        <div class="podium">
+            <!-- Silver (2nd place) -->
+            <div class="podium-slot silver">
+                <div class="medal">🥈</div>
+                <h3 id="secondTeamName">Team</h3>
+                <p id="secondTeamScore">0</p>
+                <div class="place-label">2. Platz</div>
+            </div>
+            <!-- Gold (1st place) -->
+            <div class="podium-slot gold">
+                <div class="medal">🥇</div>
+                <h3 id="firstTeamName">Team</h3>
+                <p id="firstTeamScore">0</p>
+                <div class="place-label">1. Platz</div>
+            </div>
+            <!-- Bronze (3rd place) -->
+            <div class="podium-slot bronze">
+                <div class="medal">🥉</div>
+                <h3 id="thirdTeamName">Team</h3>
+                <p id="thirdTeamScore">0</p>
+                <div class="place-label">3. Platz</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

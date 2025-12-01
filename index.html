@@ -31,11 +31,11 @@
         <!-- Waiting Lobby Screen -->
         <div id="waitingLobbyScreen" class="screen">
             <div class="lobby-container">
-                <h1 style="font-size: 2.8em; margin-bottom: 5px;">⏳ Warten auf das Spiel</h1>
-                <p style="font-size: 1.1em; color: #94a3b8; margin-bottom: 50px;">Der Host bereitet das Spiel vor...</p>
+                <h1 style="font-size: 2.8em;">⏳ Warten auf das Spiel</h1>
+                <p style="font-size: 1.1em;">Der Host bereitet das Spiel vor...</p>
                 
                 <div class="waiting-teams-display">
-                    <h3 style="font-size: 1.3em; margin-bottom: 20px;">Beigetretene Teams:</h3>
+                    <h3 style="font-size: 1.3em;">Beigetretene Teams:</h3>
                     <div id="lobbyTeamsList" class="teams-grid">
                         <p class="empty-state">Teams werden geladen...</p>
                     </div>
@@ -105,11 +105,11 @@
         <!-- Transition Screen (Answer to Voting) -->
         <div id="transitionScreen" class="screen">
             <div class="transition-box" style="margin-top: 80px;">
-                <h1 style="font-size: 3em; margin-bottom: 20px;">⏸️ Antwortphase beendet</h1>
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto;">
-                    <h2 style="color: white; font-size: 1.5em; margin-bottom: 15px; text-align: center;">Die Antworten sind eingegangen!</h2>
-                    <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center; margin-bottom: 20px;">Alle Teams haben ihre Antworten eingereicht. Jetzt wird es spannend!</p>
-                    <p style="color: rgba(255,255,255,0.8); font-size: 1em; text-align: center;">Der Host startet gleich die Abstimmungsphase, wo ihr für die beste Antwort stimmen könnt.</p>
+                <h1 style="font-size: 3em; margin-bottom: 20px; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">⏸️ Antwortphase beendet</h1>
+                <div style="background: var(--card-bg); padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; border: 1px solid var(--border-color);">
+                    <h2 style="color: var(--text-color); font-size: 1.5em; margin-bottom: 15px; text-align: center;">Die Antworten sind eingegangen!</h2>
+                    <p style="color: #cbd5e1; font-size: 1.1em; text-align: center; margin-bottom: 20px;">Alle Teams haben ihre Antworten eingereicht. Jetzt wird es spannend!</p>
+                    <p style="color: #94a3b8; font-size: 1em; text-align: center;">Der Host startet gleich die Abstimmungsphase, wo ihr für die beste Antwort stimmen könnt.</p>
                 </div>
             </div>
         </div>
@@ -117,22 +117,22 @@
         <!-- Time's Up Screen -->
         <div id="timesUpScreen" class="screen">
             <div class="transition-box" style="margin-top: 80px;">
-                <h1 style="font-size: 3em; margin-bottom: 40px;">⏱️ Die Zeit ist um!</h1>
-                <div id="timesUpAnswerBox" style="padding: 50px; border-radius: 20px; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);">
+                <h1 style="font-size: 3em; margin-bottom: 40px; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">⏱️ Die Zeit ist um!</h1>
+                <div id="timesUpAnswerBox" style="padding: 50px; border-radius: 20px; max-width: 600px; margin: 0 auto; background: var(--card-bg); border: 1px solid var(--border-color);">
                     <!-- Answering Phase Display -->
                     <div id="timesUpAnswerContent" style="display: none; text-align: center;">
-                        <p style="color: rgba(255,255,255,0.9); font-size: 0.95em; margin-bottom: 25px;">Deine Antwort:</p>
-                        <p id="timesUpAnswerText" style="color: white; font-size: 1.8em; font-weight: bold; text-align: center; background: rgba(0,0,0,0.25); padding: 20px; border-radius: 12px; margin-bottom: 15px;"></p>
-                        <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
+                        <p style="color: #cbd5e1; font-size: 0.95em; margin-bottom: 25px;">Deine Antwort:</p>
+                        <p id="timesUpAnswerText" style="color: var(--text-color); font-size: 1.8em; font-weight: bold; text-align: center; background: rgba(0,0,0,0.25); padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border-color);"></p>
+                        <p style="color: #cbd5e1; font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
                     </div>
                     <!-- Voting Phase Display -->
                     <div id="timesUpVoteContent" style="display: none; text-align: center;">
-                        <div id="timesUpVoteAnswerBox" style="background: rgba(0,0,0,0.25); padding: 30px; border-radius: 12px; margin-bottom: 25px;">
-                            <p id="timesUpVoteIndicator" style="color: white; font-size: 2.5em; margin-bottom: 15px;"></p>
-                            <p id="timesUpVoteText" style="color: white; font-size: 2em; font-weight: bold; word-wrap: break-word;"></p>
+                        <div id="timesUpVoteAnswerBox" style="background: rgba(0,0,0,0.25); padding: 30px; border-radius: 12px; margin-bottom: 25px; border: 1px solid var(--border-color);">
+                            <p id="timesUpVoteIndicator" style="color: var(--primary-color); font-size: 2.5em; margin-bottom: 15px;"></p>
+                            <p id="timesUpVoteText" style="color: var(--text-color); font-size: 2em; font-weight: bold; word-wrap: break-word;"></p>
                         </div>
-                        <p id="timesUpVoteTeamName" style="color: rgba(255,255,255,0.95); font-size: 1.1em; margin-bottom: 20px;"></p>
-                        <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
+                        <p id="timesUpVoteTeamName" style="color: #cbd5e1; font-size: 1.1em; margin-bottom: 20px;"></p>
+                        <p style="color: #cbd5e1; font-size: 1.1em; text-align: center;">Der Host bereitet die nächste Phase vor...</p>
                     </div>
                 </div>
             </div>
@@ -147,36 +147,6 @@
             <div class="leaderboard-section">
                 <div id="leaderboardDisplay" class="scoreboard">
                     <p class="empty-state">Lade Rangliste...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Celebration Screen (Game End) -->
-        <div id="celebrationScreen" class="screen">
-            <div class="celebration-container">
-                <h1 style="font-size: 3em; margin-bottom: 30px; animation: pulse 0.6s ease-in-out;">🎉 Spiel beendet! 🎉</h1>
-                <div class="podium">
-                    <!-- Silver (2nd place) -->
-                    <div class="podium-slot silver">
-                        <div class="medal">🥈</div>
-                        <h3 id="secondTeamName">Team</h3>
-                        <p id="secondTeamScore">0</p>
-                        <div class="place-label">2. Platz</div>
-                    </div>
-                    <!-- Gold (1st place) -->
-                    <div class="podium-slot gold">
-                        <div class="medal">🥇</div>
-                        <h3 id="firstTeamName">Team</h3>
-                        <p id="firstTeamScore">0</p>
-                        <div class="place-label">1. Platz</div>
-                    </div>
-                    <!-- Bronze (3rd place) -->
-                    <div class="podium-slot bronze">
-                        <div class="medal">🥉</div>
-                        <h3 id="thirdTeamName">Team</h3>
-                        <p id="thirdTeamScore">0</p>
-                        <div class="place-label">3. Platz</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -363,16 +333,24 @@
             const timesUpAnswerBox = document.getElementById('timesUpAnswerBox');
             
             if (timesUpScreen && gameScreen && timesUpAnswerBox) {
-                gameScreen.style.display = 'none';
-                timesUpScreen.style.display = 'flex';
+                gameScreen.classList.remove('active');
+                timesUpScreen.classList.add('active');
                 
                 // Show submitted answer if in answering phase
                 const timesUpAnswerContent = document.getElementById('timesUpAnswerContent');
-                if (gamePhase === 'answering' && teamAnswer) {
-                    timesUpAnswerContent.style.display = 'block';
-                    document.getElementById('timesUpVoteContent').style.display = 'none';
-                    document.getElementById('timesUpAnswerText').textContent = teamAnswer;
-                    timesUpAnswerBox.style.background = 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)';
+                if (gamePhase === 'answering') {
+                    if (teamAnswer) {
+                        timesUpAnswerContent.style.display = 'block';
+                        document.getElementById('timesUpVoteContent').style.display = 'none';
+                        document.getElementById('timesUpAnswerText').textContent = teamAnswer;
+                        timesUpAnswerBox.style.background = 'linear-gradient(135deg, #f97316 0%, #dc2626 100%)';
+                    } else {
+                        // Show message when no answer was submitted
+                        timesUpAnswerContent.style.display = 'block';
+                        document.getElementById('timesUpVoteContent').style.display = 'none';
+                        document.getElementById('timesUpAnswerText').innerHTML = '❌ Keine Antwort eingereicht';
+                        timesUpAnswerBox.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                    }
                 } else if (gamePhase === 'voting' && teamVoteData) {
                     // Show selected vote if in voting phase
                     const timesUpVoteContent = document.getElementById('timesUpVoteContent');
@@ -395,6 +373,12 @@
                     }
                     
                     voteTextEl.textContent = teamVoteData.answerText;
+                } else if (gamePhase === 'voting') {
+                    // No vote submitted in voting phase
+                    timesUpAnswerContent.style.display = 'block';
+                    document.getElementById('timesUpVoteContent').style.display = 'none';
+                    document.getElementById('timesUpAnswerText').innerHTML = '❌ Keine Abstimmung abgegeben';
+                    timesUpAnswerBox.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
                 } else {
                     timesUpAnswerContent.style.display = 'none';
                     document.getElementById('timesUpVoteContent').style.display = 'none';
@@ -445,7 +429,6 @@
             const gameScreen = document.getElementById('gameScreen');
             const waitingLobbyScreen = document.getElementById('waitingLobbyScreen');
             const leaderboardScreen = document.getElementById('leaderboardScreen');
-            const celebrationScreen = document.getElementById('celebrationScreen');
             const transitionScreen = document.getElementById('transitionScreen');
             
             // Reset team name
@@ -457,11 +440,10 @@
             
             // Show login screen, hide all others
             loginScreen.classList.add('active');
-            gameScreen.style.display = 'none';
-            waitingLobbyScreen.style.display = 'none';
-            leaderboardScreen.style.display = 'none';
-            celebrationScreen.style.display = 'none';
-            transitionScreen.style.display = 'none';
+            gameScreen.classList.remove('active');
+            waitingLobbyScreen.classList.remove('active');
+            leaderboardScreen.classList.remove('active');
+            transitionScreen.classList.remove('active');
         }
 
         function updateVotingDisplay() {
@@ -536,9 +518,7 @@
             const gameScreen = document.getElementById('gameScreen');
             
             loginScreen.classList.remove('active');
-            loginScreen.style.display = 'none';
             gameScreen.classList.add('active');
-            gameScreen.style.display = 'block';
             document.getElementById('currentTeam').textContent = `Team: ${currentTeamName}`;
         }
 
@@ -604,9 +584,9 @@
                 // Hide timesUpScreen when new question arrives
                 const timesUpScreen = document.getElementById('timesUpScreen');
                 const gameScreen = document.getElementById('gameScreen');
-                if (timesUpScreen && gameScreen && timerExpired === false) {
-                    timesUpScreen.style.display = 'none';
-                    gameScreen.style.display = 'block';
+                if (timesUpScreen && gameScreen) {
+                    timesUpScreen.classList.remove('active');
+                    gameScreen.classList.add('active');
                 }
                 
                 if (question) {
@@ -706,7 +686,6 @@
             const gameScreen = document.getElementById('gameScreen');
             const transitionScreen = document.getElementById('transitionScreen');
             const leaderboardScreen = document.getElementById('leaderboardScreen');
-            const celebrationScreen = document.getElementById('celebrationScreen');
             const waitingLobbyScreen = document.getElementById('waitingLobbyScreen');
             const answerForm = document.getElementById('answerForm');
             const answerSubmitted = document.getElementById('answerSubmitted');
@@ -715,11 +694,10 @@
             
             if (gamePhase === 'setup' || gamePhase === 'waiting_for_teams') {
                 // Show waiting lobby screen during setup or waiting_for_teams
-                gameScreen.style.display = 'none';
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'block';
+                gameScreen.classList.remove('active');
+                transitionScreen.classList.remove('active');
+                leaderboardScreen.classList.remove('active');
+                waitingLobbyScreen.classList.add('active');
                 updateLobbyTeamsList();
             } else {
                 // If moving away from setup/waiting_for_teams phase, verify team is actually in the game
@@ -732,7 +710,7 @@
                             return;
                         }
                         // Team exists, proceed with normal UI update
-                        updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen, 
+                        updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, 
                                              waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn);
                     }).catch(error => {
                         console.error('Error checking team:', error);
@@ -740,113 +718,82 @@
                     });
                 } else {
                     // No team or already checked, proceed with normal UI update
-                    updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen, 
+                    updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, 
                                          waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn);
                 }
             }
         }
         
-        function updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen, celebrationScreen,
+        function updateUIForPhaseHelper(gameScreen, transitionScreen, leaderboardScreen,
                                        waitingLobbyScreen, answerForm, answerSubmitted, votingSection, submitBtn) {
             const timesUpScreen = document.getElementById('timesUpScreen');
+            const scoreboardSection = document.querySelector('.scoreboard-section');
             
             if (gamePhase === 'answering') {
                 // Show game screen with answer section, hide voting and leaderboard
                 // If timer has expired, show timesUpScreen instead
                 if (timerExpired) {
-                    gameScreen.style.display = 'none';
-                    if (timesUpScreen) timesUpScreen.style.display = 'flex';
+                    gameScreen.classList.remove('active');
+                    if (timesUpScreen) timesUpScreen.classList.add('active');
                 } else {
-                    gameScreen.style.display = 'block';
-                    if (timesUpScreen) timesUpScreen.style.display = 'none';
+                    gameScreen.classList.add('active');
+                    if (timesUpScreen) timesUpScreen.classList.remove('active');
                 }
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'none';
+                transitionScreen.classList.remove('active');
+                leaderboardScreen.classList.remove('active');
+                waitingLobbyScreen.classList.remove('active');
                 votingSection.style.display = 'none';
+                scoreboardSection.classList.remove('show');
                 answerForm.style.display = 'block';
                 answerSubmitted.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = false;
             } else if (gamePhase === 'answering_finished') {
                 // Show transition screen
-                gameScreen.style.display = 'none';
-                if (timesUpScreen) timesUpScreen.style.display = 'none';
-                transitionScreen.style.display = 'block';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'none';
+                gameScreen.classList.remove('active');
+                if (timesUpScreen) timesUpScreen.classList.remove('active');
+                transitionScreen.classList.add('active');
+                leaderboardScreen.classList.remove('active');
+                waitingLobbyScreen.classList.remove('active');
             } else if (gamePhase === 'voting') {
                 // Show game screen with voting section, hide answer input
                 // If timer has expired, show timesUpScreen instead
                 if (timerExpired) {
-                    gameScreen.style.display = 'none';
-                    if (timesUpScreen) timesUpScreen.style.display = 'flex';
+                    gameScreen.classList.remove('active');
+                    if (timesUpScreen) timesUpScreen.classList.add('active');
                 } else {
-                    gameScreen.style.display = 'block';
-                    if (timesUpScreen) timesUpScreen.style.display = 'none';
+                    gameScreen.classList.add('active');
+                    if (timesUpScreen) timesUpScreen.classList.remove('active');
                 }
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'none';
+                transitionScreen.classList.remove('active');
+                leaderboardScreen.classList.remove('active');
+                waitingLobbyScreen.classList.remove('active');
                 votingSection.style.display = 'block';
+                scoreboardSection.classList.add('show');
                 answerForm.style.display = 'none';
                 answerSubmitted.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = true;  // Disable answer submission
             } else if (gamePhase === 'results') {
                 // Show leaderboard screen
-                gameScreen.style.display = 'none';
-                if (timesUpScreen) timesUpScreen.style.display = 'none';
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'block';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'none';
+                gameScreen.classList.remove('active');
+                if (timesUpScreen) timesUpScreen.classList.remove('active');
+                transitionScreen.classList.remove('active');
+                leaderboardScreen.classList.add('active');
+                waitingLobbyScreen.classList.remove('active');
                 updateLeaderboardDisplay();
             } else if (gamePhase === 'celebration') {
-                // Show celebration screen
-                gameScreen.style.display = 'none';
-                if (timesUpScreen) timesUpScreen.style.display = 'none';
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'block';
-                waitingLobbyScreen.style.display = 'none';
-                updateCelebrationScreen();
+                // Navigate to celebration screen
+                window.location.href = 'celebration.html';
             } else {
                 // Finished phase
-                gameScreen.style.display = 'block';
-                transitionScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                celebrationScreen.style.display = 'none';
-                waitingLobbyScreen.style.display = 'none';
+                gameScreen.classList.add('active');
+                transitionScreen.classList.remove('active');
+                leaderboardScreen.classList.remove('active');
+                waitingLobbyScreen.classList.remove('active');
                 votingSection.style.display = 'none';
+                scoreboardSection.classList.remove('show');
                 answerForm.style.display = 'none';
                 if (submitBtn) submitBtn.disabled = true;
             }
-        }
-
-        function updateCelebrationScreen() {
-            get(ref(db, 'game/scores')).then(snapshot => {
-                const scores = snapshot.val() || {};
-                const sortedTeams = Object.entries(scores)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
-                
-                if (sortedTeams.length >= 1) {
-                    document.getElementById('firstTeamName').textContent = sortedTeams[0][0];
-                    document.getElementById('firstTeamScore').textContent = sortedTeams[0][1];
-                }
-                
-                if (sortedTeams.length >= 2) {
-                    document.getElementById('secondTeamName').textContent = sortedTeams[1][0];
-                    document.getElementById('secondTeamScore').textContent = sortedTeams[1][1];
-                }
-                
-                if (sortedTeams.length >= 3) {
-                    document.getElementById('thirdTeamName').textContent = sortedTeams[2][0];
-                    document.getElementById('thirdTeamScore').textContent = sortedTeams[2][1];
-                }
-            });
         }
 
         function updateLobbyTeamsList() {

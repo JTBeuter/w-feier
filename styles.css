@@ -38,11 +38,40 @@ body {
 
 /* Screens */
 .screen {
-    display: none;
+    display: none !important;
     animation: fadeIn 0.3s ease-in;
+    visibility: hidden !important;
 }
 
 .screen.active {
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Times Up Screen */
+#timesUpScreen {
+    display: none;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+#timesUpScreen.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Timer Display */
+#timerDisplay,
+#hostTimerDisplay {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 20px;
+    color: #10b981 !important;
+    font-size: 1.5em !important;
+    font-weight: bold !important;
+}
     display: block;
 }
 
@@ -62,6 +91,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
+    overflow: hidden;
 }
 
 .login-box {
@@ -151,7 +181,7 @@ textarea:focus {
 
 .btn-secondary {
     background: var(--card-bg);
-    color: var(--secondary-color);
+    color: white;
     border: 2px solid var(--secondary-color);
 }
 
@@ -181,7 +211,7 @@ textarea:focus {
 .btn-vote {
     background: var(--card-bg);
     color: var(--text-color);
-    border: 2px solid var(--primary-color);
+    border: 1px solid var(--border-color);
     width: 100%;
     text-align: left;
     padding: 15px;
@@ -218,6 +248,7 @@ textarea:focus {
     padding: 20px;
     padding-bottom: 80px;
     min-height: 100vh;
+    background: transparent;
 }
 
 .game-header {
@@ -229,6 +260,9 @@ textarea:focus {
     background: var(--card-bg);
     border-radius: 12px;
     border: 1px solid var(--border-color);
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .team-info h2 {
@@ -242,15 +276,65 @@ textarea:focus {
     font-weight: 700;
 }
 
-/* Sections */
-.question-section,
-.answer-section,
+/* Voting and Scoreboard hidden by default */
 .voting-section,
 .scoreboard-section {
+    display: none;
+}
+
+.voting-section.show {
+    display: block;
+    background: transparent;
+    padding: 0 !important;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.scoreboard-section.show {
+    display: block;
+    background: transparent;
+    padding: 0 !important;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Sections */
+.question-section {
+    padding: 0 !important;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.answer-section {
+    padding: 0 !important;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+#answerForm {
     background: var(--card-bg);
     padding: 20px;
     border-radius: 12px;
-    margin-bottom: 20px;
     border: 1px solid var(--border-color);
 }
 
@@ -262,7 +346,7 @@ h4 {
 
 .question-box {
     padding: 30px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
+    background: var(--card-bg);
     border-radius: 12px;
     border: 2px solid var(--border-color);
     text-align: center;
@@ -288,19 +372,24 @@ h4 {
 }
 
 .info-box {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.1));
+    background: var(--card-bg);
     border-left: 4px solid var(--success-color);
     padding: 15px;
     border-radius: 8px;
     color: #86efac;
     text-align: center;
     font-weight: 600;
+    border: 1px solid var(--border-color);
 }
 
 .voting-buttons {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
 }
 
 .voting-button {
@@ -339,6 +428,21 @@ h4 {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.leaderboard-section {
+    background: transparent;
+    padding: 0 !important;
+    margin-bottom: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .scoreboard-entry {
@@ -603,9 +707,16 @@ textarea {
 }
 
 .celebration-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
     text-align: center;
     max-width: 1000px;
     width: 100%;
+    margin: 0 auto;
 }
 
 .celebration-container h1 {
@@ -645,7 +756,7 @@ textarea {
 }
 
 .podium-slot.gold {
-    background: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(202, 138, 4, 0.15));
+    background: #ca8a04;
     border-color: #ca8a04;
     flex-direction: column;
     height: 350px;
@@ -655,14 +766,14 @@ textarea {
 }
 
 .podium-slot.silver {
-    background: linear-gradient(135deg, rgba(209, 213, 219, 0.15), rgba(163, 230, 53, 0.15));
+    background: #d1d5db;
     border-color: #d1d5db;
     height: 280px;
     order: 1;
 }
 
 .podium-slot.bronze {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 88, 12, 0.15));
+    background: #ea580c;
     border-color: #ea580c;
     height: 220px;
     order: 3;
@@ -813,9 +924,36 @@ textarea {
     text-align: center;
 }
 
+.lobby-container h1 {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 20px !important;
+}
+
+.lobby-container p {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px !important;
+}
+
 .waiting-teams-display {
     width: 100%;
     max-width: 900px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+}
+
+.waiting-teams-display h3 {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px !important;
 }
 
 .teams-grid {
