@@ -73,7 +73,7 @@
                 </div>
 
                 <!-- Questions List -->
-                <div class="answer-management">
+                <div class="answer-management questions-container">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h3>Fragen (<span id="questionCount">0</span>)</h3>
                         <button id="clearQuestionsBtn" class="btn btn-danger" style="width: auto; display: none;" onclick="clearAllQuestions()">Alle löschen</button>
@@ -320,21 +320,70 @@
             let html = '';
             questions.forEach((q, index) => {
                 html += `
-                    <div class="question-item">
+                    <div class="question-item" draggable="true" data-index="${index}">
                         <div class="question-content">
                             <strong>${index + 1}. ${q.text}</strong>
                             <p style="margin-top: 5px; color: #10b981;">✓ ${q.correct}</p>
                         </div>
                         <div class="question-buttons">
-                            ${index > 0 ? `<button class="btn btn-small" onclick="moveQuestionUp(${index})" style="width: auto;">↑</button>` : ''}
-                            ${index < questions.length - 1 ? `<button class="btn btn-small" onclick="moveQuestionDown(${index})" style="width: auto;">↓</button>` : ''}
-                            <button class="btn btn-small" onclick="editQuestion(${index})" style="width: auto;">Bearbeiten</button>
-                            <button class="btn btn-small btn-danger" onclick="deleteQuestion(${index})" style="width: auto;">Löschen</button>
+                            <button class="btn btn-small edit-btn" onclick="editQuestion(${index})" style="width: auto;"><span class="btn-text">Bearbeiten</span><span class="btn-icon">✎</span></button>
+                            <button class="btn btn-small btn-danger delete-btn" onclick="deleteQuestion(${index})" style="width: auto;"><span class="btn-text">Löschen</span><span class="btn-icon">🗑️</span></button>
                         </div>
                     </div>
                 `;
             });
             questionsList.innerHTML = html;
+            
+            // Add drag event listeners
+            addDragListeners();
+        }
+        
+        function addDragListeners() {
+            const items = document.querySelectorAll('.question-item');
+            let draggedItem = null;
+            
+            items.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    draggedItem = this;
+                    this.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    this.style.opacity = '1';
+                    draggedItem = null;
+                });
+                
+                item.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (this !== draggedItem) {
+                        this.style.borderTop = '3px solid var(--primary-color)';
+                    }
+                });
+                
+                item.addEventListener('dragleave', function(e) {
+                    this.style.borderTop = '';
+                });
+                
+                item.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    if (this !== draggedItem) {
+                        const draggedIndex = parseInt(draggedItem.dataset.index);
+                        const targetIndex = parseInt(this.dataset.index);
+                        
+                        // Swap questions
+                        [questions[draggedIndex], questions[targetIndex]] = [questions[targetIndex], questions[draggedIndex]];
+                        
+                        // Save to localStorage
+                        localStorage.setItem('wfeier_questions', JSON.stringify(questions));
+                        
+                        // Refresh display immediately
+                        updateQuestionsDisplay();
+                    }
+                    this.style.borderTop = '';
+                });
+            });
         }
 
         window.moveQuestionUp = function(index) {

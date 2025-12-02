@@ -107,10 +107,10 @@
 
         <!-- Transition Screen (Answer to Voting) -->
         <div id="transitionScreen" class="screen">
-            <div class="transition-box" style="margin-top: 80px;">
-                <h1 style="font-size: 3em; margin-bottom: 20px; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">⏸️ Antwortphase beendet</h1>
-                <div style="background: var(--card-bg); padding: 40px; border-radius: 15px; max-width: 500px; margin: 0 auto; border: 1px solid var(--border-color);">
-                    <h2 style="color: var(--text-color); font-size: 1.5em; margin-bottom: 15px; text-align: center;">Die Antworten sind eingegangen!</h2>
+            <div class="transition-box" style="margin-top: 80px; padding: 20px;">
+                <h1 style="font-size: 3em; margin-bottom: 40px; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color);">⏸️ Antwortphase beendet</h1>
+                <div style="background: var(--card-bg); padding: 50px; border-radius: 20px; max-width: 600px; margin: 0 auto; border: 1px solid var(--border-color);">
+                    <h2 style="color: var(--text-color); font-size: 1.8em; margin-bottom: 15px; text-align: center;">Die Antworten sind eingegangen!</h2>
                     <p style="color: #cbd5e1; font-size: 1.1em; text-align: center; margin-bottom: 20px;">Alle Teams haben ihre Antworten eingereicht. Jetzt wird es spannend!</p>
                     <p style="color: #94a3b8; font-size: 1em; text-align: center;">Der Host startet gleich die Abstimmungsphase, wo ihr für die beste Antwort stimmen könnt.</p>
                 </div>
@@ -143,13 +143,15 @@
 
         <!-- Leaderboard Screen -->
         <div id="leaderboardScreen" class="screen">
-            <header class="game-header">
-                <h1>🏆 Rangliste</h1>
-                <button id="leaveLeaderboardBtn" class="btn btn-small">Verlassen</button>
-            </header>
-            <div class="leaderboard-section">
-                <div id="leaderboardDisplay" class="scoreboard">
-                    <p class="empty-state">Lade Rangliste...</p>
+            <div class="leaderboard-container">
+                <div class="leaderboard-header">
+                    <h1>🏆 Rangliste</h1>
+                    <button id="leaveLeaderboardBtn" class="btn btn-small">Verlassen</button>
+                </div>
+                <div class="leaderboard-content">
+                    <div id="leaderboardDisplay" class="scoreboard">
+                        <p class="empty-state">Lade Rangliste...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -333,9 +335,18 @@
             if (timerDisplay) timerDisplay.style.display = 'none';
         }
 
-        function handleTimerExpired() {
+        async function handleTimerExpired() {
             console.log('⏱️ Timer expired for phase:', gamePhase);
             timerExpired = true;
+            
+            // Auto-submit answer if in answering phase and text exists
+            if (gamePhase === 'answering') {
+                const answerInput = document.getElementById('answerInput');
+                if (answerInput && answerInput.value.trim()) {
+                    console.log('Auto-submitting answer:', answerInput.value.trim());
+                    await submitAnswer(true);
+                }
+            }
             
             // Show the times up screen
             const timesUpScreen = document.getElementById('timesUpScreen');
@@ -911,10 +922,12 @@
             }
         };
 
-        async function submitAnswer() {
+        async function submitAnswer(isAutoSubmit = false) {
             const answerText = document.getElementById('answerInput').value.trim();
             if (!answerText) {
-                alert('Bitte gib eine Antwort ein');
+                if (!isAutoSubmit) {
+                    alert('Bitte gib eine Antwort ein');
+                }
                 return;
             }
 
@@ -924,7 +937,9 @@
                 const question = snapshot.val();
 
                 if (!question) {
-                    alert('Keine aktive Frage - bitte warte auf die nächste Frage');
+                    if (!isAutoSubmit) {
+                        alert('Keine aktive Frage - bitte warte auf die nächste Frage');
+                    }
                     return;
                 }
 
@@ -933,7 +948,7 @@
                 const elapsedSeconds = now - question.timerStartTime;
                 const remainingSeconds = question.timerDuration - elapsedSeconds;
 
-                if (remainingSeconds <= 0) {
+                if (remainingSeconds <= 0 && !isAutoSubmit) {
                     alert('Die Zeit zum Beantworten ist abgelaufen!');
                     return;
                 }
