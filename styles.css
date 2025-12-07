@@ -556,7 +556,8 @@ h3 {
     border-radius: 8px;
     border-left: 3px solid var(--border-color);
     transition: all 0.3s ease;
-    gap: 15px;
+    gap: 20px;
+    margin-bottom: 10px;
 }
 
 .scoreboard-entry .medal {
@@ -1077,40 +1078,66 @@ textarea {
     }
 
     .podium {
-        gap: 5px;
-        min-height: 250px;
-        flex-wrap: wrap;
-        justify-content: space-around;
+        gap: 15px;
+        min-height: auto;
+        flex-direction: column;
+        align-items: center;
+        height: auto;
+        flex-wrap: nowrap;
     }
 
     .podium-slot {
-        min-width: 120px;
-        padding: 10px;
+        min-width: unset;
+        width: 100%;
+        max-width: 280px;
+        padding: 15px;
+        height: auto !important;
+        min-height: auto;
+        margin-bottom: 10px;
+        flex-direction: row; /* Horizontal layout inside the card for vertical stack */
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
     }
 
+    /* Reorder for vertical stack: Gold (1), Silver (2), Bronze (3) */
     .podium-slot.gold {
-        height: 200px;
+        order: 1;
+        margin-bottom: 15px;
+        border-color: #ca8a04;
+        background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%);
     }
 
     .podium-slot.silver {
-        height: 160px;
+        order: 2;
     }
 
     .podium-slot.bronze {
-        height: 120px;
+        order: 3;
     }
 
     .medal {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
+        font-size: 2rem;
+        margin-bottom: 0;
+        margin-right: 15px;
     }
 
     .podium-slot h3 {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
+        padding-bottom: 0;
+        margin-bottom: 0;
+        flex: 1;
+        word-break: break-word;
     }
 
     .podium-slot p {
         font-size: 1.2rem;
+        margin-bottom: 0;
+        margin-left: 15px;
+    }
+    
+    .place-label {
+        display: none; /* Hide place label in compact view */
     }
 }
 

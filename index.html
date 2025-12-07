@@ -56,7 +56,6 @@
                     <div id="timerDisplay" style="font-size: 1.5em; font-weight: bold; color: #10b981; display: none;">
                         ⏱️ <span id="timerMinutes">0</span>:<span id="timerSeconds">00</span>
                     </div>
-                    <button id="leaveBtn" class="btn btn-small">Verlassen</button>
                 </div>
             </header>
 
@@ -146,7 +145,6 @@
             <div class="leaderboard-container">
                 <div class="leaderboard-header">
                     <h1>🏆 Rangliste</h1>
-                    <button id="leaveLeaderboardBtn" class="btn btn-small">Verlassen</button>
                 </div>
                 <div class="leaderboard-content">
                     <div id="leaderboardDisplay" class="scoreboard">
@@ -411,9 +409,7 @@
 
         // Event Listeners
         document.getElementById('joinBtn').addEventListener('click', joinGame);
-        document.getElementById('leaveBtn').addEventListener('click', leaveGame);
         document.getElementById('submitAnswerBtn').addEventListener('click', submitAnswer);
-        document.getElementById('leaveLeaderboardBtn').addEventListener('click', leaveGame);
 
         async function joinGame() {
             // Only allow joining if phase is 'waiting_for_teams'
@@ -580,6 +576,13 @@
                     gamePhase = newPhase;
                     console.log('🔄 Game phase changed to:', gamePhase);
                     
+                    // Reset timerExpired when starting a new timed phase to prevent flashing old screens
+                    if (gamePhase === 'answering' || gamePhase === 'voting') {
+                        timerExpired = false;
+                        const timesUpScreen = document.getElementById('timesUpScreen');
+                        if (timesUpScreen) timesUpScreen.classList.remove('active');
+                    }
+
                     // Stop timer if phase ended early (e.g., answering -> answering_finished)
                     // Don't change the UI, just stop the countdown
                     if ((previousPhase === 'answering' || previousPhase === 'voting') && 

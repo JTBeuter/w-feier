@@ -53,10 +53,10 @@
                         <input 
                             type="number" 
                             id="answeringTimeInput" 
-                            placeholder="z.B. 45"
+                            placeholder="z.B. 300"
                             min="10"
                             max="300"
-                            value="45"
+                            value="300"
                         >
                     </div>
                     <div class="form-section">
@@ -64,10 +64,10 @@
                         <input 
                             type="number" 
                             id="votingTimeInput" 
-                            placeholder="z.B. 30"
+                            placeholder="z.B. 90"
                             min="10"
                             max="300"
-                            value="30"
+                            value="90"
                         >
                     </div>
                 </div>
@@ -661,7 +661,7 @@
             
             // Read answering time from input and save to database
             const answeringTimeInput = document.getElementById('answeringTimeInput');
-            const answeringTime = parseInt(answeringTimeInput.value) || 45;
+            const answeringTime = parseInt(answeringTimeInput.value) || 300;
             await set(ref(db, 'game/answeringTime'), answeringTime);
             
             await set(ref(db, 'game/phase'), gamePhase);
@@ -674,7 +674,7 @@
             
             // Read voting time from input and save to database
             const votingTimeInput = document.getElementById('votingTimeInput');
-            const votingTime = parseInt(votingTimeInput.value) || 30;
+            const votingTime = parseInt(votingTimeInput.value) || 90;
             await set(ref(db, 'game/votingTime'), votingTime);
             
             await set(ref(db, 'game/phase'), gamePhase);
@@ -807,6 +807,9 @@
                 // For each team's answer, give them 1 point per vote received
                 Object.entries(answers).forEach(([teamName, answerData]) => {
                     if (teamName !== 'Lösung') {
+                        // Find how many votes this answer text received (regardless of who submitted it, though ideally unique text)
+                        // Actually, we should count votes for THIS specific team's answer
+                        // In the first pass we counted votes by 'votedFor' which is the team name.
                         const votesReceived = voteCountByTeam[teamName] || 0;
                         if (votesReceived > 0) {
                             if (!scores[teamName]) scores[teamName] = 0;
@@ -841,6 +844,7 @@
                 // Check if this is the last question and game is ending
                 if (isGameEnding) {
                     // Show celebration screen with top 3 teams
+                    // Pass the updated scores directly to be safe, though celebration screen loads from DB
                     await showCelebrationScreen(currentScores);
                 } else {
                     // Set game phase to 'results' to show leaderboard on client
