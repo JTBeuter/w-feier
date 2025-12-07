@@ -1073,71 +1073,68 @@ textarea {
 
 @media (max-width: 480px) {
     .celebration-container h1 {
-        font-size: 2rem;
-        margin-bottom: 20px;
+        font-size: 1.5rem; /* Further reduced font size */
+        margin-bottom: 15px;
     }
 
     .podium {
-        gap: 15px;
-        min-height: auto;
-        flex-direction: column;
-        align-items: center;
-        height: auto;
-        flex-wrap: nowrap;
+        gap: 8px; /* Reduce gap between slots */
+        min-height: auto; /* Allow height to adjust */
+        flex-direction: row; /* Ensure it stays a row */
+        align-items: flex-end; /* Keep podium shape */
+        flex-wrap: nowrap; /* Prevent wrapping */
+        padding: 0 5px; /* Add slight horizontal padding */
     }
 
     .podium-slot {
-        min-width: unset;
-        width: 100%;
-        max-width: 280px;
-        padding: 15px;
-        height: auto !important;
-        min-height: auto;
-        margin-bottom: 10px;
-        flex-direction: row; /* Horizontal layout inside the card for vertical stack */
-        justify-content: space-between;
-        align-items: center;
-        text-align: left;
+        min-width: 120px; /* Allow slots to shrink more */
+        width: 33%; /* Each slot takes about a third of the width */
+        max-width: 220px; /* Max size for slots on smaller screens */
+        padding: 10px 5px; /* Reduce padding inside slots */
+        height: auto; /* Remove fixed height for now */
+        flex-direction: column; /* Keep internal elements stacked */
+        justify-content: flex-end;
     }
 
-    /* Reorder for vertical stack: Gold (1), Silver (2), Bronze (3) */
     .podium-slot.gold {
-        order: 1;
-        margin-bottom: 15px;
+        height: 180px; /* Reduced height for gold */
+        order: 2; /* Gold in middle */
+        margin-bottom: 0;
+        background: #ca8a04; /* Keep original color */
         border-color: #ca8a04;
-        background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%);
+        transform: scale(1); /* No scale */
     }
 
     .podium-slot.silver {
-        order: 2;
+        height: 140px; /* Reduced height for silver */
+        order: 1; /* Silver on left */
     }
 
     .podium-slot.bronze {
-        order: 3;
+        height: 100px; /* Reduced height for bronze */
+        order: 3; /* Bronze on right */
     }
 
     .medal {
-        font-size: 2rem;
-        margin-bottom: 0;
-        margin-right: 15px;
+        font-size: 1.8rem; /* Smaller medal icon */
+        margin-bottom: 5px;
     }
 
     .podium-slot h3 {
-        font-size: 1.1rem;
-        padding-bottom: 0;
-        margin-bottom: 0;
-        flex: 1;
-        word-break: break-word;
+        font-size: 0.8rem; /* Smaller team name */
+        padding-bottom: 5px;
+        word-wrap: break-word; /* Allow long names to wrap */
+        max-width: none; /* Allow full width of slot */
+        text-align: center; /* Center team names */
     }
 
     .podium-slot p {
-        font-size: 1.2rem;
-        margin-bottom: 0;
-        margin-left: 15px;
+        font-size: 1rem; /* Smaller score */
+        margin-bottom: 5px;
     }
     
     .place-label {
-        display: none; /* Hide place label in compact view */
+        display: none; /* Hide place label for simplicity */
     }
 }
 
