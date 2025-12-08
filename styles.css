@@ -274,23 +274,32 @@ textarea:focus {
     white-space: normal;
     max-width: 100%;
     -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: none;
+    transform: translateX(0);
 }
 
 .btn-vote:hover {
     background: var(--primary-color);
     color: white;
-    transform: translateX(5px);
+    transform: translateX(0);
 }
 
 .btn-vote:active {
-    background: var(--card-bg);
-    color: var(--text-color);
-    transform: none;
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    transform: translateX(0) !important;
+    border-color: var(--border-color) !important;
 }
 
 .btn-vote:focus {
-    outline: none;
-    box-shadow: none;
+    outline: none !important;
+    box-shadow: none !important;
+    background: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+    transform: translateX(0) !important;
 }
 
 .btn-vote-selected {
@@ -298,16 +307,23 @@ textarea:focus {
     border-color: var(--success-color);
     color: white;
     font-weight: bold;
+    transform: translateX(0) !important;
 }
 
 .btn-vote-selected:active {
-    background: var(--success-color);
-    color: white;
+    background: var(--success-color) !important;
+    color: white !important;
+    border-color: var(--success-color) !important;
+    transform: translateX(0) !important;
 }
 
 .btn-vote-selected:focus {
-    outline: none;
-    box-shadow: none;
+    outline: none !important;
+    box-shadow: none !important;
+    background: var(--success-color) !important;
+    color: white !important;
+    border-color: var(--success-color) !important;
+    transform: translateX(0) !important;
 }
 
 .btn-vote:disabled {
