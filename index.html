@@ -469,7 +469,19 @@
             const votingArea = document.getElementById('votingArea');
             if (!votingArea) return;
             
-            const observer = new MutationObserver(() => {
+            const observer = new MutationObserver((mutations) => {
+                // Only update if mutations affect button styles, not structure
+                let needsUpdate = false;
+                for (let mutation of mutations) {
+                    if (mutation.type === 'attributes' && mutation.target.classList.contains('btn-vote')) {
+                        needsUpdate = true;
+                        break;
+                    }
+                }
+                
+                if (!needsUpdate) return;
+                
+                // Only fix styles on existing buttons, don't trigger re-renders
                 document.querySelectorAll('.btn-vote').forEach(btn => {
                     const isSelected = btn.classList.contains('btn-vote-selected');
                     
@@ -488,10 +500,11 @@
             });
             
             observer.observe(votingArea, {
-                childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['style', 'class']
+                attributeFilter: ['style', 'class'],
+                attributeOldValue: false,
+                characterData: false
             });
             
             return observer;
