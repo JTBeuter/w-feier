@@ -273,6 +273,7 @@ textarea:focus {
     word-wrap: break-word;
     white-space: normal;
     max-width: 100%;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-vote:hover {
@@ -281,11 +282,32 @@ textarea:focus {
     transform: translateX(5px);
 }
 
+.btn-vote:active {
+    background: var(--card-bg);
+    color: var(--text-color);
+    transform: none;
+}
+
+.btn-vote:focus {
+    outline: none;
+    box-shadow: none;
+}
+
 .btn-vote-selected {
     background: var(--success-color);
     border-color: var(--success-color);
     color: white;
     font-weight: bold;
+}
+
+.btn-vote-selected:active {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-vote-selected:focus {
+    outline: none;
+    box-shadow: none;
 }
 
 .btn-vote:disabled {

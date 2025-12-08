@@ -618,6 +618,11 @@
                 teamAnswer = null;
                 timerExpired = false;
                 
+                // Force unfocus all buttons to clear any lingering focus/active states
+                document.querySelectorAll('.btn-vote').forEach(btn => {
+                    btn.blur();
+                });
+                
                 // Hide timesUpScreen when new question arrives
                 const timesUpScreen = document.getElementById('timesUpScreen');
                 const gameScreen = document.getElementById('gameScreen');
