@@ -467,6 +467,14 @@
         function updateVotingDisplay() {
             const votingArea = document.getElementById('votingArea');
             
+            // Immediately clear voting area and blur all buttons
+            votingArea.innerHTML = '';
+            document.querySelectorAll('.btn-vote').forEach(btn => {
+                btn.blur();
+                btn.classList.remove('btn-vote-selected');
+                btn.disabled = false;
+            });
+            
             // Check if round is finished first
             if (!roundFinished || !currentQuestion) {
                 votingArea.innerHTML = '<p class="empty-state">Warte auf Freigabe der Antworten...</p>';
@@ -535,6 +543,10 @@
                                         `;
                                     });
                                     votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
+                                    // Blur any newly created buttons
+                                    setTimeout(() => {
+                                        document.querySelectorAll('.btn-vote').forEach(btn => btn.blur());
+                                    }, 0);
                                 } else {
                                     votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
                                 }
