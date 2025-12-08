@@ -556,22 +556,6 @@
                                         `;
                                     });
                                     votingArea.innerHTML = votingHtml || '<p class="empty-state">Nur deine Antwort verfügbar</p>';
-                                    // Force correct colors on all buttons after rendering
-                                    setTimeout(() => {
-                                        document.querySelectorAll('.btn-vote').forEach(btn => {
-                                            btn.blur();
-                                            if (btn.classList.contains('btn-vote-selected')) {
-                                                btn.style.backgroundColor = '#10b981';
-                                                btn.style.borderColor = '#10b981';
-                                                btn.style.color = 'white';
-                                            } else {
-                                                btn.style.backgroundColor = '#1e293b';
-                                                btn.style.borderColor = '#334155';
-                                                btn.style.color = '#f1f5f9';
-                                            }
-                                            btn.style.transform = 'translateX(0)';
-                                        });
-                                    }, 50);
                                 } else {
                                     votingArea.innerHTML = '<p class="empty-state">Warte auf Antworten zum Abstimmen...</p>';
                                 }
@@ -714,17 +698,37 @@
                 
                 // Update voting display when question changes
                 updateVotingDisplay();
+                
+                // Force correct button styles after voting display updates (only during voting phase)
+                if (gamePhase === 'voting') {
+                    setTimeout(() => {
+                        document.querySelectorAll('.btn-vote').forEach(btn => {
+                            btn.blur();
+                            if (btn.classList.contains('btn-vote-selected')) {
+                                btn.style.backgroundColor = '#10b981';
+                                btn.style.borderColor = '#10b981';
+                                btn.style.color = 'white';
+                            } else {
+                                btn.style.backgroundColor = '#1e293b';
+                                btn.style.borderColor = '#334155';
+                                btn.style.color = '#f1f5f9';
+                            }
+                            btn.style.transform = 'translateX(0)';
+                        });
+                    }, 50);
+                }
             });
 
-            // Listen for answers (voting)
-            onValue(ref(db, 'game/answers'), (snapshot) => {
-                updateVotingDisplay();
-            });
-            
-            // Listen for round finished state to trigger voting display update
+            // Listen for round finished state
             onValue(ref(db, 'game/roundFinished'), (snapshot) => {
-                roundFinished = snapshot.val() || false;
-                updateVotingDisplay();
+                const newRoundFinished = snapshot.val() || false;
+                if (newRoundFinished !== roundFinished) {
+                    roundFinished = newRoundFinished;
+                    // Only update voting display if we're in voting phase
+                    if (gamePhase === 'voting') {
+                        updateVotingDisplay();
+                    }
+                }
             });
 
             // Listen for scores
@@ -961,7 +965,25 @@
                     };
                 }
                 
-                updateVotingDisplay();
+                // Update UI locally for this client only - mark the clicked button and disable all
+                const votingArea = document.getElementById('votingArea');
+                votingArea.querySelectorAll('.btn-vote').forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('btn-vote-selected');
+                });
+                
+                // Find and mark the voted button by checking its onclick attribute
+                const votedButton = Array.from(votingArea.querySelectorAll('.btn-vote')).find(btn => {
+                    return btn.onclick && btn.onclick.toString().includes(`'${teamName}'`);
+                });
+                
+                if (votedButton) {
+                    votedButton.classList.add('btn-vote-selected');
+                    // Add checkmark to indicate selection
+                    if (!votedButton.textContent.startsWith('✓')) {
+                        votedButton.textContent = '✓ ' + votedButton.textContent;
+                    }
+                }
             } catch (error) {
                 console.error('Voting error:', error);
             }
