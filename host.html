@@ -260,6 +260,49 @@
 
         // Start listening for data
         startListeners();
+        
+        // Check if a game is already in progress and restore it
+        restoreGameState();
+
+        async function restoreGameState() {
+            try {
+                // Check if there's an active game
+                const phaseSnapshot = await get(ref(db, 'game/phase'));
+                const phase = phaseSnapshot.val();
+                
+                // If phase exists and isn't 'setup', a game is in progress
+                if (phase && phase !== 'setup') {
+                    gameStarted = true;
+                    gamePhase = phase;
+                    
+                    // Restore current question index
+                    const questionsSnapshot = await get(ref(db, 'game/questions'));
+                    if (questionsSnapshot.exists()) {
+                        const questionsData = questionsSnapshot.val();
+                        questions = Object.values(questionsData);
+                        
+                        // Find current question index
+                        const currentQSnapshot = await get(ref(db, 'game/currentQuestion'));
+                        if (currentQSnapshot.exists()) {
+                            const currentQ = currentQSnapshot.val();
+                            currentQuestionIndex = questions.findIndex(q => q.id === currentQ.id);
+                            if (currentQuestionIndex === -1) {
+                                currentQuestionIndex = 0;
+                            }
+                        }
+                    }
+                    
+                    // Switch to game screen
+                    document.getElementById('setupScreen').classList.remove('active');
+                    document.getElementById('gameScreen').classList.add('active');
+                    
+                    console.log('✓ Game state restored - Phase:', gamePhase, 'Question:', currentQuestionIndex + 1);
+                    updateGameDisplay();
+                }
+            } catch (error) {
+                console.error('Error restoring game state:', error);
+            }
+        }
 
         async function addQuestion() {
             const questionText = document.getElementById('questionInput').value.trim();
